@@ -411,7 +411,7 @@ const LandingPage = () => {
                     <Link
                       key={cat.id}
                       to="/login"
-                      className={`group relative overflow-hidden rounded-2xl p-6 text-center transition-all duration-500 hover:-translate-y-2 hover:scale-105 bg-gradient-to-br ${cat.color} backdrop-blur-sm`}
+                      className={`group relative overflow-hidden rounded-2xl p-6 text-center transition-all duration-500 hover:-translate-y-2 hover:scale-105 bg-gradient-to-br ${cat.color} backdrop-blur-sm category-card`}
                       style={{
                         border: '1px solid rgba(255,255,255,0.06)',
                         boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
@@ -460,7 +460,7 @@ const LandingPage = () => {
               <div className="space-y-4">
                 {features.slice(0, 3).map((feature, i) => (
                   <div key={i} className="relative">
-                    <div className={`bg-gradient-to-br ${feature.color} rounded-2xl p-6 transition-all duration-300 hover:-translate-x-2 backdrop-blur-sm`}
+                    <div className={`bg-gradient-to-br ${feature.color} rounded-2xl p-6 transition-all duration-300 hover:-translate-x-2 backdrop-blur-sm feature-card`}
                       style={{
                         border: '1px solid rgba(255,255,255,0.06)',
                         boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
@@ -499,7 +499,7 @@ const LandingPage = () => {
               <div className="space-y-4">
                 {features.slice(3, 6).map((feature, i) => (
                   <div key={i} className="relative">
-                    <div className={`bg-gradient-to-br ${feature.color} rounded-2xl p-6 transition-all duration-300 hover:translate-x-2 backdrop-blur-sm`}
+                    <div className={`bg-gradient-to-br ${feature.color} rounded-2xl p-6 transition-all duration-300 hover:translate-x-2 backdrop-blur-sm feature-card`}
                       style={{
                         border: '1px solid rgba(255,255,255,0.06)',
                         boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
@@ -532,7 +532,7 @@ const LandingPage = () => {
               {cities.map((city, i) => (
                 <div
                   key={i}
-                  className={`group relative overflow-hidden rounded-2xl p-8 text-center transition-all duration-500 hover:-translate-y-4 hover:scale-105 bg-gradient-to-br ${city.color} backdrop-blur-sm`}
+                  className={`group relative overflow-hidden rounded-2xl p-8 text-center transition-all duration-500 hover:-translate-y-4 hover:scale-105 bg-gradient-to-br ${city.color} backdrop-blur-sm city-card`}
                   style={{
                     border: '1px solid rgba(255,255,255,0.06)',
                     boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
@@ -672,6 +672,86 @@ const LandingPage = () => {
 
         section {
           transition: all 0.1s ease;
+        }
+
+        /* Category Card Glow Effect */
+        .category-card {
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+        }
+        .category-card::before {
+          content: '';
+          position: absolute;
+          inset: -2px;
+          border-radius: 1rem;
+          background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899, #f59e0b);
+          opacity: 0;
+          transition: opacity 0.4s ease;
+          z-index: -1;
+        }
+        .category-card:hover::before {
+          opacity: 1;
+        }
+        .category-card:hover {
+          transform: translateY(-8px) scale(1.05);
+          box-shadow: 
+            0 0 30px rgba(99, 102, 241, 0.3),
+            0 0 60px rgba(168, 85, 247, 0.2),
+            0 0 90px rgba(236, 72, 153, 0.15),
+            inset 0 0 30px rgba(255, 255, 255, 0.05);
+        }
+
+        /* Feature Card Glow Effect */
+        .feature-card {
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+        }
+        .feature-card::before {
+          content: '';
+          position: absolute;
+          inset: -2px;
+          border-radius: 1rem;
+          background: linear-gradient(135deg, #8b5cf6, #3b82f6, #06b6d4, #10b981);
+          opacity: 0;
+          transition: opacity 0.4s ease;
+          z-index: -1;
+        }
+        .feature-card:hover::before {
+          opacity: 1;
+        }
+        .feature-card:hover {
+          box-shadow: 
+            0 0 30px rgba(139, 92, 246, 0.3),
+            0 0 60px rgba(59, 130, 246, 0.2),
+            0 0 90px rgba(6, 182, 212, 0.15),
+            inset 0 0 30px rgba(255, 255, 255, 0.05);
+        }
+
+        /* City Card Glow Effect */
+        .city-card {
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+        }
+        .city-card::before {
+          content: '';
+          position: absolute;
+          inset: -2px;
+          border-radius: 1rem;
+          background: linear-gradient(135deg, #f59e0b, #ef4444, #ec4899, #8b5cf6);
+          opacity: 0;
+          transition: opacity 0.4s ease;
+          z-index: -1;
+        }
+        .city-card:hover::before {
+          opacity: 1;
+        }
+        .city-card:hover {
+          transform: translateY(-8px) scale(1.05);
+          box-shadow: 
+            0 0 30px rgba(245, 158, 11, 0.3),
+            0 0 60px rgba(239, 68, 68, 0.2),
+            0 0 90px rgba(236, 72, 153, 0.15),
+            inset 0 0 30px rgba(255, 255, 255, 0.05);
         }
       `}</style>
     </div>

@@ -311,8 +311,10 @@ const LandingPage = () => {
                 <sup className="text-2xl text-orange-400 font-bold align-super">V</sup>
                 <span className={`${text} text-sm align-super`}>th</span>
                 <br />
-                <span className="bg-gradient-to-r from-blue-400 via-violet-400 via-pink-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent animate-gradient">
-                  Trusted Local Experts
+                <span>
+                  <span className="color-swap-word" style={{ animationDelay: '0s' }}>Trusted</span>{' '}
+                  <span className="color-swap-word" style={{ animationDelay: '0.8s' }}>Local</span>{' '}
+                  <span className="color-swap-word" style={{ animationDelay: '1.6s' }}>Experts</span>
                 </span>
               </h1>
 
@@ -387,7 +389,9 @@ const LandingPage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="text-center mb-12">
               <h2 className={`text-5xl md:text-6xl font-bold ${text}`}>
-                Explore Our <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Feed</span>
+                <span className="color-swap-word" style={{ animationDelay: '0s' }}>Explore</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '0.8s' }}>Our</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '1.6s' }}>Feed</span>
               </h2>
               <p className={`${muted} mt-3 text-lg`}>Choose your category and find the perfect expert</p>
             </div>
@@ -452,7 +456,8 @@ const LandingPage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="text-center mb-12">
               <h2 className={`text-5xl md:text-6xl font-bold ${text}`}>
-                Explore <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Features</span>
+                <span className="color-swap-word" style={{ animationDelay: '0s' }}>Explore</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '1s' }}>Features</span>
               </h2>
             </div>
 
@@ -523,7 +528,12 @@ const LandingPage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="text-center mb-12">
               <h2 className={`text-5xl md:text-6xl font-bold ${text}`}>
-                Cities You Can Find <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Our Services</span>
+                <span className="color-swap-word" style={{ animationDelay: '0s' }}>Cities</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '0.5s' }}>You</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '1s' }}>Can</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '1.5s' }}>Find</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '2s' }}>Our</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '2.5s' }}>Services</span>
               </h2>
               <p className={`${muted} mt-3 text-lg`}>Discover local expertise in your city</p>
             </div>
@@ -558,10 +568,14 @@ const LandingPage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="text-center mb-12">
               <h2 className={`text-4xl md:text-5xl font-bold ${text}`}>
-                Explore the Features of <br />
-                <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  CretCom - SkillConnect
-                </span>
+                <span className="color-swap-word" style={{ animationDelay: '0s' }}>Explore</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '0.4s' }}>the</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '0.8s' }}>Features</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '1.2s' }}>of</span>{' '}
+                <br />
+                <span className="color-swap-word" style={{ animationDelay: '1.6s' }}>CretCom</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '2s' }}>-</span>{' '}
+                <span className="color-swap-word" style={{ animationDelay: '2.4s' }}>SkillConnect</span>
               </h2>
               <p className={`${muted} mt-3 text-xl`}>The place where you can meet the local expertise</p>
             </div>
@@ -647,15 +661,6 @@ const LandingPage = () => {
           animation: float ease-in-out infinite;
         }
 
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 3s ease-in-out infinite;
-        }
-
         @keyframes marquee {
           0% { transform: translateX(0); }
           100% { transform: translateX(-33.33%); }
@@ -673,6 +678,57 @@ const LandingPage = () => {
         section {
           transition: all 0.1s ease;
         }
+
+        /* Individual word color swapping - Harmonious Blue, Violet, Pink, Yellow palette */
+        @keyframes colorSwap1 {
+          0%, 100% { color: #6366f1; } /* Indigo */
+          25% { color: #a855f7; } /* Purple */
+          50% { color: #ec4899; } /* Pink */
+          75% { color: #f59e0b; } /* Amber/Yellow */
+        }
+        @keyframes colorSwap2 {
+          0%, 100% { color: #a855f7; } /* Purple */
+          25% { color: #ec4899; } /* Pink */
+          50% { color: #f59e0b; } /* Amber/Yellow */
+          75% { color: #6366f1; } /* Indigo */
+        }
+        @keyframes colorSwap3 {
+          0%, 100% { color: #ec4899; } /* Pink */
+          25% { color: #f59e0b; } /* Amber/Yellow */
+          50% { color: #6366f1; } /* Indigo */
+          75% { color: #a855f7; } /* Purple */
+        }
+        @keyframes colorSwap4 {
+          0%, 100% { color: #f59e0b; } /* Amber/Yellow */
+          25% { color: #6366f1; } /* Indigo */
+          50% { color: #a855f7; } /* Purple */
+          75% { color: #ec4899; } /* Pink */
+        }
+        @keyframes colorSwap5 {
+          0%, 100% { color: #8b5cf6; } /* Violet */
+          25% { color: #f472b6; } /* Light Pink */
+          50% { color: #fbbf24; } /* Yellow */
+          75% { color: #6366f1; } /* Indigo */
+        }
+        @keyframes colorSwap6 {
+          0%, 100% { color: #f472b6; } /* Light Pink */
+          25% { color: #fbbf24; } /* Yellow */
+          50% { color: #6366f1; } /* Indigo */
+          75% { color: #8b5cf6; } /* Violet */
+        }
+
+        .color-swap-word {
+          display: inline-block;
+          animation-duration: 5s;
+          animation-iteration-count: infinite;
+          animation-timing-function: ease-in-out;
+        }
+        .color-swap-word:nth-child(6n+1) { animation-name: colorSwap1; }
+        .color-swap-word:nth-child(6n+2) { animation-name: colorSwap2; }
+        .color-swap-word:nth-child(6n+3) { animation-name: colorSwap3; }
+        .color-swap-word:nth-child(6n+4) { animation-name: colorSwap4; }
+        .color-swap-word:nth-child(6n+5) { animation-name: colorSwap5; }
+        .color-swap-word:nth-child(6n+6) { animation-name: colorSwap6; }
 
         /* Category Card Glow Effect */
         .category-card {

@@ -6,7 +6,11 @@ import {
   signInWithRedirect,
   getRedirectResult,
   setPersistence,
-  browserLocalPersistence
+  browserLocalPersistence,
+  // ✅ NEW: Phone Auth imports
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  PhoneAuthProvider
 } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -38,12 +42,16 @@ const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('email');
 googleProvider.addScope('profile');
 
+// ✅ NEW: Export Phone Auth
 export { 
   auth, 
   googleProvider, 
   signInWithPopup, 
   signInWithRedirect,
-  getRedirectResult
+  getRedirectResult,
+  RecaptchaVerifier,        // ✅ NEW
+  signInWithPhoneNumber,    // ✅ NEW
+  PhoneAuthProvider         // ✅ NEW
 };
 
 export default app;

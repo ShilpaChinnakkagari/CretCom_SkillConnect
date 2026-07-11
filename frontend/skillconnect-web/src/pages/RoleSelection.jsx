@@ -37,7 +37,7 @@ const RoleSelection = () => {
 
     try {
       const response = await axios.put(
-        'http://localhost:8080/api/auth/users/role',
+        'http://localhost:8080/auth/users/role',
         { userType: role },
         { withCredentials: true }
       );

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import PhoneVerification from './PhoneVerification';
 
 const languages = [
   'Hindi', 'English', 'Telugu', 'Tamil', 'Kannada',
@@ -9,6 +10,7 @@ const languages = [
 
 const Stage1BasicProfile = ({ formData, updateFormData, onNext, user, loading, setLoading }) => {
   const [errors, setErrors] = useState({});
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleChange = (e) => {
@@ -36,11 +38,22 @@ const Stage1BasicProfile = ({ formData, updateFormData, onNext, user, loading, s
     }
   };
 
+  const handlePhoneVerification = (verifiedPhone) => {
+    setIsOtpVerified(true);
+    toast.success('Phone number verified successfully!');
+  };
+
+  const handlePhoneVerificationError = (error) => {
+    console.error('Phone verification error:', error);
+    setIsOtpVerified(false);
+  };
+
   const validate = () => {
     const newErrors = {};
     if (!formData.fullName?.trim()) newErrors.fullName = 'Full name is required';
     if (!formData.phoneNumber?.trim()) newErrors.phoneNumber = 'Phone number is required';
     if (formData.phoneNumber?.length < 10) newErrors.phoneNumber = 'Phone number must be at least 10 digits';
+    if (!isOtpVerified) newErrors.phoneNumber = 'Please verify your phone number first';
     if (!formData.languagesSpoken?.length) newErrors.languagesSpoken = 'Select at least one language';
     if (!formData.aboutMe?.trim()) newErrors.aboutMe = 'About me is required';
     if (formData.aboutMe?.length < 20) newErrors.aboutMe = 'About me must be at least 20 characters';
@@ -64,6 +77,7 @@ const Stage1BasicProfile = ({ formData, updateFormData, onNext, user, loading, s
         fullName: formData.fullName,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
+        phoneVerified: isOtpVerified,
         whatsappNumber: formData.whatsappNumber,
         languagesSpoken: formData.languagesSpoken,
         aboutMe: formData.aboutMe,
@@ -155,19 +169,43 @@ const Stage1BasicProfile = ({ formData, updateFormData, onNext, user, loading, s
           <p className="text-xs text-gray-400 mt-1">Email cannot be changed</p>
         </div>
 
-        {/* Phone Number */}
+        {/* Phone Number with OTP */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Phone Number <span className="text-red-500">*</span>
           </label>
-          <input
-            type="tel"
-            name="phoneNumber"
-            value={formData.phoneNumber}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            placeholder="Enter phone number"
-          />
+          <div className="flex gap-3 items-end">
+            <div className="flex-1">
+              <input
+                type="tel"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                disabled={isOtpVerified}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                  isOtpVerified ? 'bg-green-50 border-green-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter phone number (e.g., 9876543210)"
+              />
+            </div>
+            <div className="flex-shrink-0">
+              <PhoneVerification
+                phoneNumber={formData.phoneNumber}
+                onVerified={handlePhoneVerification}
+                onError={handlePhoneVerificationError}
+              />
+            </div>
+          </div>
+          {isOtpVerified && (
+            <p className="text-green-600 text-sm mt-1 flex items-center gap-1">
+              ✅ Phone number verified
+            </p>
+          )}
+          {!isOtpVerified && formData.phoneNumber && !errors.phoneNumber && (
+            <p className="text-gray-400 text-xs mt-1">
+              Click "Send OTP" to verify your number
+            </p>
+          )}
           {errors.phoneNumber && <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>}
         </div>
 
@@ -255,12 +293,21 @@ const Stage1BasicProfile = ({ formData, updateFormData, onNext, user, loading, s
         <div className="flex justify-end pt-6 border-t">
           <button
             onClick={handleSubmit}
-            disabled={loading}
-            className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition disabled:opacity-50"
+            disabled={loading || !isOtpVerified}
+            className={`px-6 py-2 rounded-lg transition ${
+              isOtpVerified 
+                ? 'bg-primary-600 text-white hover:bg-primary-700' 
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
           >
             {loading ? 'Saving...' : 'Save & Continue →'}
           </button>
         </div>
+        {!isOtpVerified && (
+          <p className="text-amber-500 text-sm text-right">
+            ⚠️ Please verify your phone number to continue
+          </p>
+        )}
       </div>
     </div>
   );

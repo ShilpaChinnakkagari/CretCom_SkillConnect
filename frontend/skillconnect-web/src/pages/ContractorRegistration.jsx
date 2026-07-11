@@ -9,14 +9,14 @@ import Stage3Pricing from '../components/contractor/Stage3Pricing';
 import Stage4Portfolio from '../components/contractor/Stage4Portfolio';
 import Stage5Availability from '../components/contractor/Stage5Availability';
 
-axios.defaults.withCredentials = true;
+axios.defaults.baseURL = 'http://localhost:8080';
 
 const ContractorRegistration = () => {
   const navigate = useNavigate();
   const [currentStage, setCurrentStage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
-  const [existingProfile, setExistingProfile] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(true);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -89,27 +89,41 @@ const ContractorRegistration = () => {
       }));
     } else {
       navigate('/login');
+      return;
     }
 
-    // Check if contractor profile already exists
     checkExistingProfile();
   }, []);
 
   const checkExistingProfile = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/contractor/profile', {
-        withCredentials: true
+      const userStr = localStorage.getItem('user');
+      const userData = userStr ? JSON.parse(userStr) : null;
+      const userId = userData?.id || userData?.userId;
+      
+      if (!userId) {
+        setCheckingProfile(false);
+        return;
+      }
+
+      // ✅ FIXED: Added /api prefix
+      const response = await axios.get('/api/contractor/profile', {
+        params: { userId: userId }
       });
-      if (response.data && response.data.id) {
-        setExistingProfile(true);
-        toast.info('You already have a contractor profile. Redirecting to dashboard...');
-        setTimeout(() => navigate('/contractor-dashboard'), 1500);
+      
+      if (response.data && response.data.registrationComplete === true) {
+        toast.success('You are already registered!');
+        navigate('/contractor-dashboard');
+        return;
       }
     } catch (error) {
-      // 404 means no profile exists - that's fine
-      if (error.response?.status !== 404) {
+      if (error.response?.status === 404) {
+        console.log('No existing profile - new user registration');
+      } else {
         console.error('Error checking profile:', error);
       }
+    } finally {
+      setCheckingProfile(false);
     }
   };
 
@@ -127,12 +141,42 @@ const ContractorRegistration = () => {
     window.scrollTo(0, 0);
   };
 
-  if (existingProfile) {
+  const handleFinalSubmit = async () => {
+    setLoading(true);
+    try {
+      const userStr = localStorage.getItem('user');
+      const userData = userStr ? JSON.parse(userStr) : null;
+      
+      const submitData = {
+        ...formData,
+        userId: userData?.id || userData?.userId
+      };
+      
+      console.log('Submitting registration data with userId:', submitData.userId);
+      // ✅ FIXED: Added /api prefix
+      const response = await axios.post('/api/contractor/register/complete', submitData);
+      
+      if (response.data) {
+        toast.success('🎉 Registration complete! Welcome to SkillConnect!');
+        setTimeout(() => {
+          navigate('/contractor-dashboard');
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      const errorMsg = error.response?.data?.error || error.response?.data || 'Failed to complete registration';
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (checkingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Your profile exists. Redirecting to dashboard...</p>
+          <p className="mt-4 text-gray-600">Checking your profile...</p>
         </div>
       </div>
     );
@@ -195,6 +239,7 @@ const ContractorRegistration = () => {
             loading={loading}
             setLoading={setLoading}
             navigate={navigate}
+            onSubmit={handleFinalSubmit}
           />
         );
       default:
@@ -207,9 +252,7 @@ const ContractorRegistration = () => {
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Become a Service Provider</h1>
-          <p className="text-gray-600 mt-2">
-            Complete your profile to start receiving bookings
-          </p>
+          <p className="text-gray-600 mt-2">Complete your profile to start receiving bookings</p>
         </div>
 
         <div className="mb-8">

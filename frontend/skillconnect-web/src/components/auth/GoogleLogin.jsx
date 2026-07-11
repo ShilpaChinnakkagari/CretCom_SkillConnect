@@ -77,14 +77,14 @@ const GoogleLogin = ({ onSuccess, onError, buttonText = "Sign in with Google" })
     <button
       onClick={handleGoogleLogin}
       type="button"
-      className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+      className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all duration-300 group"
     >
       <img
         src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
         alt="Google"
         className="w-5 h-5"
       />
-      <span className="text-gray-700 font-medium">{buttonText}</span>
+      <span className="font-medium">{buttonText}</span>
     </button>
   );
 };

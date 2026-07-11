@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 const categories = {
@@ -74,7 +73,6 @@ const Stage2Skills = ({ formData, updateFormData, onNext, onBack, loading, setLo
   const [subcategories, setSubcategories] = useState([]);
 
   useEffect(() => {
-    // If primaryCategory is already set, find its category
     if (formData.primaryCategory) {
       for (const [cat, subs] of Object.entries(categories)) {
         if (subs.includes(formData.primaryCategory)) {
@@ -90,7 +88,7 @@ const Stage2Skills = ({ formData, updateFormData, onNext, onBack, loading, setLo
     const category = e.target.value;
     setSelectedCategory(category);
     setSubcategories(categories[category] || []);
-    updateFormData({ primaryCategory: '' }); // Reset subcategory
+    updateFormData({ primaryCategory: '' });
     setErrors(prev => ({ ...prev, primaryCategory: '' }));
   };
 
@@ -121,33 +119,9 @@ const Stage2Skills = ({ formData, updateFormData, onNext, onBack, loading, setLo
   const handleSubmit = async () => {
     if (!validate()) return;
 
-    setLoading(true);
-    try {
-      const payload = {
-        primaryCategory: formData.primaryCategory,
-        secondarySkills: formData.secondarySkills || [],
-        yearsOfExperience: parseInt(formData.yearsOfExperience),
-        skillLevel: formData.skillLevel,
-        workTypes: formData.workTypes || [],
-        specializations: formData.specializations || [],
-        teamSize: formData.teamSize || 'SOLO',
-        idType: formData.idType,
-        idNumber: formData.idNumber,
-        idProofUrl: formData.idProofUrl
-      };
-
-      await axios.post('http://localhost:8080/api/contractor/register/stage2', payload, {
-        withCredentials: true
-      });
-
-      toast.success('Skills saved!');
-      onNext();
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error(error.response?.data?.message || 'Failed to save skills');
-    } finally {
-      setLoading(false);
-    }
+    // ✅ Just go to next stage - NO API CALL
+    toast.success('Skills data saved locally');
+    onNext();
   };
 
   return (
@@ -279,7 +253,7 @@ const Stage2Skills = ({ formData, updateFormData, onNext, onBack, loading, setLo
           {errors.workTypes && <p className="text-red-500 text-sm mt-1">{errors.workTypes}</p>}
         </div>
 
-        {/* Rest of the component remains the same */}
+        {/* Team Size */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Team Size <span className="text-gray-400 text-xs">(Optional)</span>

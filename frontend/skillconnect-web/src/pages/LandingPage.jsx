@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import AuthModal from '../components/AuthModal';
 
 const LandingPage = () => {
   const [isDark, setIsDark] = useState(true);
@@ -8,6 +9,10 @@ const LandingPage = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const containerRef = useRef(null);
   const [isMarqueePaused, setIsMarqueePaused] = useState(false);
+  
+  // Auth Modal State
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('login');
 
   const allCategories = [
     { id: 1, name: 'Construction', icon: '🔨', color: 'from-orange-400/20 via-red-400/20 to-pink-400/20' },
@@ -48,6 +53,11 @@ const LandingPage = () => {
     { name: 'Kolkata', icon: '🚃', color: 'from-amber-400/20 via-yellow-400/20 to-orange-400/20' },
     { name: 'Ahmedabad', icon: '🏙️', color: 'from-teal-400/20 via-cyan-400/20 to-blue-400/20' },
   ];
+
+  const openAuthModal = (mode = 'login') => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -148,12 +158,10 @@ const LandingPage = () => {
     opacity: 0.2 + Math.random() * 0.5,
   }));
 
-  // Earth hiding: 10% per section
   const hidePercentage = Math.min(currentSection * 10, 50);
   const earthOpacity = 1 - (hidePercentage / 100);
   const earthOffset = hidePercentage * 3;
 
-  // Smooth marquee colors - blended and elegant
   const marqueeColors = [
     'from-blue-400/30 via-cyan-400/30 to-sky-400/30',
     'from-purple-400/30 via-pink-400/30 to-rose-400/30',
@@ -270,6 +278,13 @@ const LandingPage = () => {
         </button>
       </div>
 
+      {/* ===== AUTH MODAL ===== */}
+      <AuthModal 
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
+      />
+
       {/* ===== SCROLL CONTAINER ===== */}
       <div ref={containerRef} className="h-screen overflow-y-scroll snap-y snap-mandatory relative z-10 scrollbar-hide">
 
@@ -288,15 +303,18 @@ const LandingPage = () => {
                 </div>
               </Link>
               <div className="flex items-center gap-6">
-                <Link to="/login" className={`${muted} hover:text-indigo-400 transition-all duration-300 font-medium text-lg`}>
+                <button 
+                  onClick={() => openAuthModal('login')}
+                  className={`${muted} hover:text-indigo-400 transition-all duration-300 font-medium text-lg`}
+                >
                   Sign In
-                </Link>
-                <Link
-                  to="/login"
+                </button>
+                <button
+                  onClick={() => openAuthModal('register')}
                   className="px-8 py-3 rounded-2xl bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 text-white font-semibold shadow-2xl shadow-orange-500/25 transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-3xl"
                 >
                   Get Started
-                </Link>
+                </button>
               </div>
             </div>
 
@@ -322,7 +340,7 @@ const LandingPage = () => {
                 A marketplace where customers can easily discover local professionals and service providers can grow their business by showcasing their skills, portfolios, ratings, and availability.
               </p>
 
-              {/* Search Bar - Smooth blended colors */}
+              {/* Search Bar */}
               <div className={`flex flex-col md:flex-row items-center gap-3 p-2 rounded-2xl max-w-2xl transition-all duration-300 hover:scale-[1.01]`}
                 style={{
                   background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(139, 92, 246, 0.12), rgba(234, 179, 8, 0.12), rgba(251, 146, 60, 0.12))',
@@ -348,14 +366,17 @@ const LandingPage = () => {
                     className={`w-full bg-transparent outline-none ${text} placeholder-gray-500`}
                   />
                 </div>
-                <button className="w-full md:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-semibold hover:scale-105 transition-all duration-300 shadow-xl shadow-purple-500/25">
+                <button 
+                  onClick={() => openAuthModal('register')}
+                  className="w-full md:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-semibold hover:scale-105 transition-all duration-300 shadow-xl shadow-purple-500/25"
+                >
                   Search
                 </button>
               </div>
             </div>
           </div>
 
-          {/* ===== INFINITE MARQUEE - Smooth blended colors ===== */}
+          {/* ===== INFINITE MARQUEE ===== */}
           <div className="absolute bottom-0 left-0 right-0 z-30 overflow-hidden border-t border-white/5 py-3" 
                style={{ background: isDark ? 'rgba(10,10,18,0.9)' : 'rgba(240,242,245,0.9)' }}>
             <div 
@@ -412,9 +433,9 @@ const LandingPage = () => {
               <div className="overflow-hidden mx-12">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 transition-all duration-500 ease-in-out">
                   {visibleCategories.map((cat) => (
-                    <Link
+                    <button
                       key={cat.id}
-                      to="/login"
+                      onClick={() => openAuthModal('register')}
                       className={`group relative overflow-hidden rounded-2xl p-6 text-center transition-all duration-500 hover:-translate-y-2 hover:scale-105 bg-gradient-to-br ${cat.color} backdrop-blur-sm category-card`}
                       style={{
                         border: '1px solid rgba(255,255,255,0.06)',
@@ -429,7 +450,7 @@ const LandingPage = () => {
                         <h3 className={`font-semibold ${text} text-sm md:text-base`}>{cat.name}</h3>
                         <div className="mt-3 w-8 h-0.5 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 mx-auto group-hover:w-16 transition-all duration-300" />
                       </div>
-                    </Link>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -486,7 +507,7 @@ const LandingPage = () => {
                     <div className="relative">
                       <div className="w-[300px] h-[200px] bg-gradient-to-br from-indigo-900/50 to-purple-900/50 rounded-xl flex items-center justify-center">
                         <img 
-                          src="/laptop.jpeg" 
+                          src="C:\CretCom Projects\skillconnect\laptop.jpeg" 
                           alt="Laptop" 
                           className="w-full h-full object-cover rounded-xl"
                           onError={(e) => {
@@ -540,8 +561,9 @@ const LandingPage = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {cities.map((city, i) => (
-                <div
+                <button
                   key={i}
+                  onClick={() => openAuthModal('register')}
                   className={`group relative overflow-hidden rounded-2xl p-8 text-center transition-all duration-500 hover:-translate-y-4 hover:scale-105 bg-gradient-to-br ${city.color} backdrop-blur-sm city-card`}
                   style={{
                     border: '1px solid rgba(255,255,255,0.06)',
@@ -555,7 +577,7 @@ const LandingPage = () => {
                     <h3 className={`text-xl font-bold ${text}`}>{city.name}</h3>
                     <div className="mt-3 w-12 h-0.5 bg-gradient-to-r from-indigo-400 to-pink-400 mx-auto group-hover:w-20 transition-all duration-300" />
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -595,18 +617,18 @@ const LandingPage = () => {
               <div>
                 <h4 className={`font-semibold ${text} mb-4 text-lg`}>Quick Links</h4>
                 <ul className="space-y-3 text-sm">
-                  <li><Link to="/login" className={`${muted} hover:text-indigo-400 transition-colors`}>Find Services</Link></li>
-                  <li><Link to="/login" className={`${muted} hover:text-indigo-400 transition-colors`}>How it Works</Link></li>
-                  <li><Link to="/login" className={`${muted} hover:text-indigo-400 transition-colors`}>Become a Provider</Link></li>
+                  <li><button onClick={() => openAuthModal('register')} className={`${muted} hover:text-indigo-400 transition-colors`}>Find Services</button></li>
+                  <li><button onClick={() => openAuthModal('register')} className={`${muted} hover:text-indigo-400 transition-colors`}>How it Works</button></li>
+                  <li><button onClick={() => openAuthModal('register')} className={`${muted} hover:text-indigo-400 transition-colors`}>Become a Provider</button></li>
                 </ul>
               </div>
 
               <div>
                 <h4 className={`font-semibold ${text} mb-4 text-lg`}>Support</h4>
                 <ul className="space-y-3 text-sm">
-                  <li><Link to="/login" className={`${muted} hover:text-indigo-400 transition-colors`}>Help Center</Link></li>
-                  <li><Link to="/login" className={`${muted} hover:text-indigo-400 transition-colors`}>Contact Us</Link></li>
-                  <li><Link to="/login" className={`${muted} hover:text-indigo-400 transition-colors`}>FAQs</Link></li>
+                  <li><button onClick={() => openAuthModal('register')} className={`${muted} hover:text-indigo-400 transition-colors`}>Help Center</button></li>
+                  <li><button onClick={() => openAuthModal('register')} className={`${muted} hover:text-indigo-400 transition-colors`}>Contact Us</button></li>
+                  <li><button onClick={() => openAuthModal('register')} className={`${muted} hover:text-indigo-400 transition-colors`}>FAQs</button></li>
                 </ul>
               </div>
 
@@ -679,42 +701,41 @@ const LandingPage = () => {
           transition: all 0.1s ease;
         }
 
-        /* Individual word color swapping - Harmonious Blue, Violet, Pink, Yellow palette */
         @keyframes colorSwap1 {
-          0%, 100% { color: #6366f1; } /* Indigo */
-          25% { color: #a855f7; } /* Purple */
-          50% { color: #ec4899; } /* Pink */
-          75% { color: #f59e0b; } /* Amber/Yellow */
+          0%, 100% { color: #6366f1; }
+          25% { color: #a855f7; }
+          50% { color: #ec4899; }
+          75% { color: #f59e0b; }
         }
         @keyframes colorSwap2 {
-          0%, 100% { color: #a855f7; } /* Purple */
-          25% { color: #ec4899; } /* Pink */
-          50% { color: #f59e0b; } /* Amber/Yellow */
-          75% { color: #6366f1; } /* Indigo */
+          0%, 100% { color: #a855f7; }
+          25% { color: #ec4899; }
+          50% { color: #f59e0b; }
+          75% { color: #6366f1; }
         }
         @keyframes colorSwap3 {
-          0%, 100% { color: #ec4899; } /* Pink */
-          25% { color: #f59e0b; } /* Amber/Yellow */
-          50% { color: #6366f1; } /* Indigo */
-          75% { color: #a855f7; } /* Purple */
+          0%, 100% { color: #ec4899; }
+          25% { color: #f59e0b; }
+          50% { color: #6366f1; }
+          75% { color: #a855f7; }
         }
         @keyframes colorSwap4 {
-          0%, 100% { color: #f59e0b; } /* Amber/Yellow */
-          25% { color: #6366f1; } /* Indigo */
-          50% { color: #a855f7; } /* Purple */
-          75% { color: #ec4899; } /* Pink */
+          0%, 100% { color: #f59e0b; }
+          25% { color: #6366f1; }
+          50% { color: #a855f7; }
+          75% { color: #ec4899; }
         }
         @keyframes colorSwap5 {
-          0%, 100% { color: #8b5cf6; } /* Violet */
-          25% { color: #f472b6; } /* Light Pink */
-          50% { color: #fbbf24; } /* Yellow */
-          75% { color: #6366f1; } /* Indigo */
+          0%, 100% { color: #8b5cf6; }
+          25% { color: #f472b6; }
+          50% { color: #fbbf24; }
+          75% { color: #6366f1; }
         }
         @keyframes colorSwap6 {
-          0%, 100% { color: #f472b6; } /* Light Pink */
-          25% { color: #fbbf24; } /* Yellow */
-          50% { color: #6366f1; } /* Indigo */
-          75% { color: #8b5cf6; } /* Violet */
+          0%, 100% { color: #f472b6; }
+          25% { color: #fbbf24; }
+          50% { color: #6366f1; }
+          75% { color: #8b5cf6; }
         }
 
         .color-swap-word {
@@ -730,7 +751,6 @@ const LandingPage = () => {
         .color-swap-word:nth-child(6n+5) { animation-name: colorSwap5; }
         .color-swap-word:nth-child(6n+6) { animation-name: colorSwap6; }
 
-        /* Category Card Glow Effect */
         .category-card {
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           position: relative;
@@ -757,7 +777,6 @@ const LandingPage = () => {
             inset 0 0 30px rgba(255, 255, 255, 0.05);
         }
 
-        /* Feature Card Glow Effect */
         .feature-card {
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           position: relative;
@@ -783,7 +802,6 @@ const LandingPage = () => {
             inset 0 0 30px rgba(255, 255, 255, 0.05);
         }
 
-        /* City Card Glow Effect */
         .city-card {
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           position: relative;

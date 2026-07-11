@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 const socialPlatforms = ['INSTAGRAM', 'YOUTUBE', 'FACEBOOK', 'LINKEDIN', 'TWITTER', 'WHATSAPP', 'TELEGRAM', 'SNAPCHAT', 'PINTEREST', 'OTHER'];
@@ -65,7 +64,6 @@ const Stage4Portfolio = ({ formData, updateFormData, onNext, onBack, loading, se
     }
   };
 
-  // ============ SOCIAL LINKS ============
   const handleSocialPlatformChange = (e) => {
     const value = e.target.value;
     setNewSocialLink(prev => ({ ...prev, platform: value }));
@@ -105,45 +103,10 @@ const Stage4Portfolio = ({ formData, updateFormData, onNext, onBack, loading, se
     updateFormData({ socialLinks: updated });
   };
 
-  // ============ SHOP DETAILS ============
-  const handleShopPhotoUpload = (e) => {
-    const files = e.target.files;
-    const readers = [];
-    for (let i = 0; i < files.length; i++) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewPortfolio(prev => ({
-          ...prev,
-          imageUrls: [...prev.imageUrls, reader.result]
-        }));
-      };
-      reader.readAsDataURL(files[i]);
-    }
-  };
-
   const handleSubmit = async () => {
-    setLoading(true);
-    try {
-      const payload = {
-        portfolio: formData.portfolio || [],
-        socialLinks: formData.socialLinks || [],
-        shopName: formData.shopName || '',
-        shopAddress: formData.shopAddress || '',
-        shopPhotos: formData.shopPhotos || []
-      };
-
-      await axios.post('http://localhost:8080/api/contractor/register/stage4', payload, {
-        withCredentials: true
-      });
-
-      toast.success('Portfolio saved!');
-      onNext();
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error(error.response?.data?.message || 'Failed to save');
-    } finally {
-      setLoading(false);
-    }
+    // ✅ Just go to next stage - NO API CALL
+    toast.success('Portfolio data saved locally');
+    onNext();
   };
 
   return (
@@ -165,7 +128,6 @@ const Stage4Portfolio = ({ formData, updateFormData, onNext, onBack, loading, se
             </button>
           </div>
 
-          {/* Portfolio List */}
           {formData.portfolio?.length > 0 && (
             <div className="grid grid-cols-2 gap-4 mb-4">
               {formData.portfolio.map((item, index) => (
@@ -185,7 +147,6 @@ const Stage4Portfolio = ({ formData, updateFormData, onNext, onBack, loading, se
             </div>
           )}
 
-          {/* Add Portfolio Form */}
           {showAddForm && (
             <div className="border rounded-lg p-4 space-y-3">
               <input
@@ -237,13 +198,12 @@ const Stage4Portfolio = ({ formData, updateFormData, onNext, onBack, loading, se
           )}
         </div>
 
-        {/* Social Links - With Dropdown + Manual Entry */}
+        {/* Social Links */}
         <div className="border-t pt-4">
           <div className="flex justify-between items-center mb-3">
             <h3 className="font-medium text-gray-700">Social Links</h3>
           </div>
 
-          {/* Add Social Link Form */}
           <div className="flex flex-wrap gap-3 mb-3">
             <div className="flex-1 min-w-[150px]">
               <select
@@ -289,7 +249,6 @@ const Stage4Portfolio = ({ formData, updateFormData, onNext, onBack, loading, se
             </button>
           </div>
 
-          {/* Display Social Links */}
           {formData.socialLinks?.length > 0 && (
             <div className="space-y-2">
               {formData.socialLinks.map((link, index) => (

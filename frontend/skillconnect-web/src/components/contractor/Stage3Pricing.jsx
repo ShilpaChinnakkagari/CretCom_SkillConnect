@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 const pricingTypes = ['FIXED', 'HOURLY', 'PER_PROJECT', 'NEGOTIABLE'];
@@ -60,34 +59,9 @@ const Stage3Pricing = ({ formData, updateFormData, onNext, onBack, loading, setL
   const handleSubmit = async () => {
     if (!validate()) return;
 
-    setLoading(true);
-    try {
-      const payload = {
-        pricingType: formData.pricingType,
-        baseServiceCharge: parseFloat(formData.baseServiceCharge) || 0,
-        minimumPrice: parseFloat(formData.minimumPrice),
-        maximumPrice: parseFloat(formData.maximumPrice) || 0,
-        emergencyCharge: parseFloat(formData.emergencyCharge) || 0,
-        priceNegotiable: formData.priceNegotiable,
-        location: formData.location,
-        serviceAreas: formData.serviceAreas,
-        serviceRadius: parseInt(formData.serviceRadius) || 10,
-        homeServiceAvailable: formData.homeServiceAvailable,
-        serviceType: formData.serviceType
-      };
-
-      await axios.post('http://localhost:8080/api/contractor/register/stage3', payload, {
-        withCredentials: true
-      });
-
-      toast.success('Pricing & location saved!');
-      onNext();
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error(error.response?.data?.message || 'Failed to save');
-    } finally {
-      setLoading(false);
-    }
+    // ✅ Just go to next stage - NO API CALL
+    toast.success('Pricing & location data saved locally');
+    onNext();
   };
 
   return (
@@ -250,7 +224,7 @@ const Stage3Pricing = ({ formData, updateFormData, onNext, onBack, loading, setL
           </div>
         </div>
 
-        {/* Service Areas - Add/Remove */}
+        {/* Service Areas */}
         <div className="border-t pt-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Service Areas <span className="text-red-500">*</span>
@@ -273,7 +247,6 @@ const Stage3Pricing = ({ formData, updateFormData, onNext, onBack, loading, setL
             </button>
           </div>
 
-          {/* Display added areas */}
           <div className="flex flex-wrap gap-2">
             {(formData.serviceAreas || []).map((area, index) => (
               <div

@@ -21,6 +21,9 @@ public class Contractor {
     @Indexed(unique = true)
     private String userId; // Reference to User.id
 
+    // ============ STAGE TRACKING ============
+    private Integer currentRegistrationStage; // 1, 2, 3, 4, or 5
+
     // ============ STAGE 1: Basic Profile ============
     private String fullName;
     private String email; // Read-only from Google

@@ -1,101 +1,81 @@
 package com.skillconnect.controllers;
 
-import com.skillconnect.dto.*;
 import com.skillconnect.models.Contractor;
 import com.skillconnect.services.ContractorService;
-import com.skillconnect.services.UserService;
-import jakarta.servlet.http.HttpSession;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/contractor")
+@RequestMapping("/contractor")  // ✅ CHANGED: Removed /api
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@Slf4j
 public class ContractorController {
 
     private final ContractorService contractorService;
-    private final UserService userService;
-
-    private String getUserIdFromSession(HttpSession session) {
-        String userId = (String) session.getAttribute("userId");
-        System.out.println("🔍 ContractorController - Session userId: " + userId);
-        if (userId == null) {
-            throw new RuntimeException("User not logged in. Please login again.");
-        }
-        return userId;
-    }
-
-    @GetMapping
-    public ResponseEntity<List<Contractor>> getAllContractors() {
-        List<Contractor> contractors = contractorService.getAllContractors();
-        return ResponseEntity.ok(contractors);
-    }
-
-    @GetMapping("/{contractorId}")
-    public ResponseEntity<Contractor> getContractorById(@PathVariable String contractorId) {
-        Contractor contractor = contractorService.getContractorById(contractorId);
-        return ResponseEntity.ok(contractor);
-    }
 
     @GetMapping("/profile")
-    public ResponseEntity<Contractor> getProfile(HttpSession session) {
-        String userId = getUserIdFromSession(session);
-        Contractor contractor = contractorService.getContractorByUserId(userId);
-        return ResponseEntity.ok(contractor);
+    public ResponseEntity<?> getProfile(@RequestParam String userId) {
+        try {
+            log.info("Fetching profile for userId: {}", userId);
+            
+            if (userId == null || userId.isEmpty()) {
+                Map<String, String> response = new HashMap<>();
+                response.put("error", "userId is required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+            
+            if (!contractorService.contractorExists(userId)) {
+                log.info("No contractor profile found for userId: {}", userId);
+                Map<String, String> response = new HashMap<>();
+                response.put("error", "Contractor profile not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            
+            Contractor contractor = contractorService.getContractorByUserId(userId);
+            log.info("Profile found for userId: {}", userId);
+            return ResponseEntity.ok(contractor);
+            
+        } catch (Exception e) {
+            log.error("Error in getProfile: {}", e.getMessage(), e);
+            Map<String, String> response = new HashMap<>();
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
-    @PostMapping("/register/stage1")
-    public ResponseEntity<Contractor> saveStage1(
-            HttpSession session,
-            @Valid @RequestBody ContractorStage1DTO dto) {
-
-        String userId = getUserIdFromSession(session);
-        Contractor contractor = contractorService.saveStage1(userId, dto);
-        return ResponseEntity.ok(contractor);
-    }
-
-    @PostMapping("/register/stage2")
-    public ResponseEntity<Contractor> saveStage2(
-            HttpSession session,
-            @Valid @RequestBody ContractorStage2DTO dto) {
-
-        String userId = getUserIdFromSession(session);
-        Contractor contractor = contractorService.saveStage2(userId, dto);
-        return ResponseEntity.ok(contractor);
-    }
-
-    @PostMapping("/register/stage3")
-    public ResponseEntity<Contractor> saveStage3(
-            HttpSession session,
-            @Valid @RequestBody ContractorStage3DTO dto) {
-
-        String userId = getUserIdFromSession(session);
-        Contractor contractor = contractorService.saveStage3(userId, dto);
-        return ResponseEntity.ok(contractor);
-    }
-
-    @PostMapping("/register/stage4")
-    public ResponseEntity<Contractor> saveStage4(
-            HttpSession session,
-            @Valid @RequestBody ContractorStage4DTO dto) {
-
-        String userId = getUserIdFromSession(session);
-        Contractor contractor = contractorService.saveStage4(userId, dto);
-        return ResponseEntity.ok(contractor);
-    }
-
-    @PostMapping("/register/stage5")
-    public ResponseEntity<Contractor> saveStage5(
-            HttpSession session,
-            @Valid @RequestBody ContractorStage5DTO dto) {
-
-        String userId = getUserIdFromSession(session);
-        Contractor contractor = contractorService.saveStage5(userId, dto);
-        return ResponseEntity.ok(contractor);
+    @PostMapping("/register/complete")
+    public ResponseEntity<?> completeRegistration(@RequestBody Map<String, Object> allData) {
+        try {
+            log.info("Received registration data");
+            
+            String userId = (String) allData.get("userId");
+            if (userId == null || userId.isEmpty()) {
+                log.error("userId is missing from request");
+                Map<String, String> response = new HashMap<>();
+                response.put("error", "userId is required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+            
+            log.info("Completing registration for userId: {}", userId);
+            
+            Contractor contractor = contractorService.saveCompleteRegistration(userId, allData);
+            contractorService.updateUserRole(userId);
+            
+            log.info("✅ Registration completed successfully for userId: {}", userId);
+            return ResponseEntity.ok(contractor);
+            
+        } catch (Exception e) {
+            log.error("Error completing registration: {}", e.getMessage(), e);
+            Map<String, String> response = new HashMap<>();
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 }

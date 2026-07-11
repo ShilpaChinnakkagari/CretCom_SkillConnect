@@ -44,7 +44,7 @@ const CustomerDashboard = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.get('http://localhost:8080/api/contractor', {
+            const response = await axios.get('http://localhost:8080/contractor', {
                 withCredentials: true
             });
             setContractors(response.data);

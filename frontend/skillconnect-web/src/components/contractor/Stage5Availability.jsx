@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import axios from 'axios';
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 const timeSlots = ['MORNING', 'AFTERNOON', 'EVENING', 'FULL_DAY'];
@@ -36,14 +37,40 @@ const Stage5Availability = ({ formData, updateFormData, onBack, loading, setLoad
   const handleSubmit = async () => {
     if (!validate()) return;
 
-    // ✅ If onSubmit prop exists, use it (parent handles saving)
-    if (onSubmit) {
-      onSubmit();
-      return;
-    }
+    setLoading(true);
+    try {
+      const userStr = localStorage.getItem('user');
+      const userData = userStr ? JSON.parse(userStr) : null;
+      const userId = userData?.id || userData?.userId;
 
-    // Fallback - should not be used
-    toast.error('Please complete all stages first');
+      const stageData = {
+        userId: userId,
+        stage: 5,
+        weeklySchedule: formData.weeklySchedule || [],
+        timeSlots: formData.timeSlots || [],
+        emergencyAvailability: formData.emergencyAvailability,
+        holidayWorking: formData.holidayWorking,
+        blockedDates: formData.blockedDates || [],
+        termsAccepted: formData.termsAccepted
+      };
+
+      console.log('Saving Stage 5 (Completing Registration):', stageData);
+      const response = await axios.post('http://localhost:8080/contractor/register/stage', stageData, {
+        withCredentials: true
+      });
+
+      if (response.data.success) {
+        toast.success('🎉 Registration Complete! Welcome to SkillConnect!');
+        setTimeout(() => {
+          navigate('/contractor-dashboard');
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error completing registration:', error);
+      toast.error(error.response?.data?.error || 'Failed to complete registration');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

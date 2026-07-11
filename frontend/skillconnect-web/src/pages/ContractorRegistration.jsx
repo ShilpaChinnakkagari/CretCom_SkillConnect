@@ -17,6 +17,7 @@ const ContractorRegistration = () => {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [checkingProfile, setCheckingProfile] = useState(true);
+  const [existingContractor, setExistingContractor] = useState(null);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -106,16 +107,68 @@ const ContractorRegistration = () => {
         return;
       }
 
-      // ✅ FIXED: Added /api prefix
-      const response = await axios.get('/api/contractor/profile', {
+      // ============ FIX: Check registration stage to resume ============
+      const response = await axios.get('/contractor/profile/stage', {
         params: { userId: userId }
       });
       
-      if (response.data && response.data.registrationComplete === true) {
+      if (response.data.exists && response.data.registrationComplete === true) {
         toast.success('You are already registered!');
         navigate('/contractor-dashboard');
         return;
       }
+      
+      if (response.data.exists && response.data.contractor) {
+        // Resume from saved stage
+        const contractor = response.data.contractor;
+        setExistingContractor(contractor);
+        
+        // Populate form data with saved contractor data
+        const savedStage = contractor.currentRegistrationStage || 1;
+        setCurrentStage(savedStage + 1); // Go to next stage after saved
+        
+        // Load saved data into form
+        setFormData(prev => ({
+          ...prev,
+          fullName: contractor.fullName || prev.fullName,
+          phoneNumber: contractor.phoneNumber || prev.phoneNumber,
+          whatsappNumber: contractor.whatsappNumber || prev.whatsappNumber,
+          languagesSpoken: contractor.languagesSpoken || prev.languagesSpoken,
+          aboutMe: contractor.aboutMe || prev.aboutMe,
+          preferredContact: contractor.preferredContact || prev.preferredContact,
+          profilePhoto: contractor.profilePhoto || prev.profilePhoto,
+          primaryCategory: contractor.primaryCategory || prev.primaryCategory,
+          secondarySkills: contractor.secondarySkills || prev.secondarySkills,
+          yearsOfExperience: contractor.yearsOfExperience || prev.yearsOfExperience,
+          skillLevel: contractor.skillLevel || prev.skillLevel,
+          workTypes: contractor.workTypes || prev.workTypes,
+          teamSize: contractor.teamSize || prev.teamSize,
+          pricingType: contractor.pricingType || prev.pricingType,
+          baseServiceCharge: contractor.baseServiceCharge || prev.baseServiceCharge,
+          minimumPrice: contractor.minimumPrice || prev.minimumPrice,
+          maximumPrice: contractor.maximumPrice || prev.maximumPrice,
+          emergencyCharge: contractor.emergencyCharge || prev.emergencyCharge,
+          priceNegotiable: contractor.priceNegotiable !== null ? contractor.priceNegotiable : prev.priceNegotiable,
+          location: contractor.location || prev.location,
+          serviceAreas: contractor.serviceAreas || prev.serviceAreas,
+          serviceRadius: contractor.serviceRadius || prev.serviceRadius,
+          homeServiceAvailable: contractor.homeServiceAvailable !== null ? contractor.homeServiceAvailable : prev.homeServiceAvailable,
+          serviceType: contractor.serviceType || prev.serviceType,
+          portfolio: contractor.portfolio || prev.portfolio,
+          socialLinks: contractor.socialLinks || prev.socialLinks,
+          shopName: contractor.shopName || prev.shopName,
+          shopAddress: contractor.shopAddress || prev.shopAddress,
+          shopPhotos: contractor.shopPhotos || prev.shopPhotos,
+          weeklySchedule: contractor.weeklySchedule || prev.weeklySchedule,
+          timeSlots: contractor.timeSlots || prev.timeSlots,
+          emergencyAvailability: contractor.emergencyAvailability !== null ? contractor.emergencyAvailability : prev.emergencyAvailability,
+          holidayWorking: contractor.holidayWorking !== null ? contractor.holidayWorking : prev.holidayWorking,
+          termsAccepted: contractor.termsAccepted || prev.termsAccepted
+        }));
+        
+        toast.info(`Resuming from Stage ${savedStage + 1}`);
+      }
+      
     } catch (error) {
       if (error.response?.status === 404) {
         console.log('No existing profile - new user registration');
@@ -153,8 +206,7 @@ const ContractorRegistration = () => {
       };
       
       console.log('Submitting registration data with userId:', submitData.userId);
-      // ✅ FIXED: Added /api prefix
-      const response = await axios.post('/api/contractor/register/complete', submitData);
+      const response = await axios.post('/contractor/register/complete', submitData);
       
       if (response.data) {
         toast.success('🎉 Registration complete! Welcome to SkillConnect!');

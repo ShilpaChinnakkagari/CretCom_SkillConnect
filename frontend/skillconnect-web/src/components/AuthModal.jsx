@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { getRedirectResult, signInWithPopup, signInWithRedirect } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/firebaseConfig';
 
 axios.defaults.withCredentials = true;
@@ -11,7 +11,6 @@ const AuthModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedType, setSelectedType] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
 
   // Handle entrance animation
@@ -23,44 +22,10 @@ const AuthModal = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
-  // Handle redirect result for Google login
-  useEffect(() => {
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          const user = result.user;
-          const idToken = await user.getIdToken();
-          
-          const userType = selectedType || 'CUSTOMER';
-          
-          const response = await axios.post('http://localhost:8080/api/auth/google', {
-            idToken: idToken,
-            userType: userType
-          }, {
-            withCredentials: true
-          });
-
-          handleAuthSuccess(response.data);
-        }
-      } catch (error) {
-        console.error('Redirect result error:', error);
-        if (error.code !== 'auth/unauthorized-domain') {
-          toast.error('Login failed. Please try again.');
-        }
-      }
-    };
-
-    if (isOpen) {
-      handleRedirectResult();
-    }
-  }, [isOpen, selectedType]);
-
   useEffect(() => {
     if (!isOpen) {
       setError('');
       setLoading(false);
-      setSelectedType(null);
       setIsVisible(false);
     }
   }, [isOpen]);
@@ -85,13 +50,12 @@ const AuthModal = ({ isOpen, onClose }) => {
     }, 500);
   };
 
-  const handleGoogleLogin = async (type) => {
-    setSelectedType(type);
+  const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
 
     try {
-      console.log(`Starting Google login as ${type}...`);
+      console.log('Starting Google login...');
       
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
@@ -102,9 +66,9 @@ const AuthModal = ({ isOpen, onClose }) => {
 
       console.log('Got ID token, sending to backend...');
 
-      const response = await axios.post('http://localhost:8080/api/auth/google', {
+      const response = await axios.post('http://localhost:8080/auth/google', {
         idToken: idToken,
-        userType: type
+        userType: 'USER'
       }, {
         withCredentials: true
       });
@@ -243,15 +207,28 @@ const AuthModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* Welcome Message */}
-          <div className={`mb-10 transition-all duration-700 delay-300 ${
+          <div className={`mb-6 transition-all duration-700 delay-300 ${
             isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`}>
-            <h2 className="text-4xl font-bold text-white mb-3">
+            <h2 className="text-4xl font-bold text-white mb-2">
               Welcome Back
             </h2>
             <p className="text-gray-400 text-base">
-              Choose your role to continue with Google
+              Sign in with Google to continue
             </p>
+          </div>
+
+          {/* Info Box - tells user about role selection after login */}
+          <div className={`mb-6 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 backdrop-blur-sm transition-all duration-700 delay-350 ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}>
+            <div className="flex items-start gap-3">
+              <span className="text-indigo-400 text-lg mt-0.5">ℹ️</span>
+              <div>
+                <p className="text-gray-300 text-sm font-medium">After signing in, you'll choose your role</p>
+                <p className="text-gray-400 text-xs mt-1">Select between <span className="text-pink-400">Customer</span> or <span className="text-blue-400">Contractor</span> to get started</p>
+              </div>
+            </div>
           </div>
 
           {/* Error Message */}
@@ -275,136 +252,12 @@ const AuthModal = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          {/* UPDATED: Customer Card - Pink/Orange Theme with distinct background */}
-          <div className={`mb-4 transition-all duration-700 delay-400 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
-            <button
-              onClick={() => handleGoogleLogin('CUSTOMER')}
-              disabled={loading}
-              type="button"
-              className="w-full p-6 rounded-2xl backdrop-blur-sm border-2 text-white transition-all duration-500 group disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255, 107, 107, 0.12), rgba(255, 165, 0, 0.08), rgba(255, 20, 147, 0.06))',
-                borderColor: 'rgba(255, 107, 107, 0.25)',
-              }}
-            >
-              {/* Hover glow effect - Pink/Orange */}
-              <div className="absolute inset-0 bg-gradient-to-r from-pink-500/0 via-orange-500/10 to-yellow-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute -inset-1 bg-gradient-to-r from-pink-500/20 via-orange-500/20 to-yellow-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
-              <div className="flex items-start gap-4 relative z-10">
-                <div className="text-4xl group-hover:scale-110 transition-transform duration-300">👤</div>
-                <div className="text-left flex-1">
-                  <div className="text-lg font-semibold">
-                    <span className="bg-gradient-to-r from-pink-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent group-hover:from-pink-300 group-hover:via-orange-300 group-hover:to-yellow-300 transition-all duration-500">
-                      Join as Customer
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-400 mt-1 group-hover:text-gray-300 transition-colors">Find and book trusted service providers in your area</div>
-                  <div className="mt-3 grid grid-cols-2 gap-1.5">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
-                      <span className="text-pink-400">🔍</span>
-                      <span>Search</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
-                      <span className="text-orange-400">📅</span>
-                      <span>Book</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
-                      <span className="text-yellow-400">⭐</span>
-                      <span>Review</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
-                      <span className="text-red-400">❤️</span>
-                      <span>Favorites</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="ml-auto bg-gradient-to-r from-pink-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1">
-                  <span className="text-2xl">→</span>
-                </div>
-              </div>
-            </button>
-          </div>
-
-          {/* UPDATED: Contractor Card - Blue/Purple Theme with distinct background (Opposite) */}
-          <div className={`mb-8 transition-all duration-700 delay-500 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
-            <button
-              onClick={() => handleGoogleLogin('CONTRACTOR')}
-              disabled={loading}
-              type="button"
-              className="w-full p-6 rounded-2xl backdrop-blur-sm border-2 text-white transition-all duration-500 group disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08), rgba(6, 182, 212, 0.06))',
-                borderColor: 'rgba(99, 102, 241, 0.25)',
-              }}
-            >
-              {/* Hover glow effect - Blue/Purple */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-violet-500/10 to-cyan-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-violet-500/20 to-cyan-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
-              <div className="flex items-start gap-4 relative z-10">
-                <div className="text-4xl group-hover:scale-110 transition-transform duration-300">🔧</div>
-                <div className="text-left flex-1">
-                  <div className="text-lg font-semibold">
-                    <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:via-violet-300 group-hover:to-cyan-300 transition-all duration-500">
-                      Join as Contractor
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-400 mt-1 group-hover:text-gray-300 transition-colors">Offer your services and grow your business</div>
-                  <div className="mt-3 grid grid-cols-2 gap-1.5">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
-                      <span className="text-blue-400">📋</span>
-                      <span>Profile</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
-                      <span className="text-violet-400">📸</span>
-                      <span>Portfolio</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
-                      <span className="text-purple-400">📩</span>
-                      <span>Requests</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
-                      <span className="text-cyan-400">💰</span>
-                      <span>Earnings</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="ml-auto bg-gradient-to-r from-blue-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1">
-                  <span className="text-2xl">→</span>
-                </div>
-              </div>
-            </button>
-          </div>
-
           {/* Google Login Button - Vibrant Glass & Glow */}
-          <div className={`transition-all duration-700 delay-600 ${
+          <div className={`transition-all duration-700 delay-400 ${
             isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`}>
-            <div className="relative mb-5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10"></div>
-              </div>
-              <div className="relative flex justify-center">
-                <span className="px-4 bg-gray-800/50 backdrop-blur-sm text-gray-400 text-xs rounded-full py-1 border border-white/5">
-                  or continue with
-                </span>
-              </div>
-            </div>
-            
-            {/* Google Button with Glass & Glow */}
             <button
-              onClick={() => {
-                if (!selectedType) {
-                  toast.error('Please select a role first');
-                  return;
-                }
-                handleGoogleLogin(selectedType);
-              }}
+              onClick={handleGoogleLogin}
               disabled={loading}
               type="button"
               className="w-full py-4 px-6 rounded-xl bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-semibold transition-all duration-300 flex items-center justify-center gap-3 border border-white/20 hover:border-white/40 shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed relative group overflow-hidden"
@@ -419,27 +272,13 @@ const AuthModal = ({ isOpen, onClose }) => {
                 className="w-6 h-6 relative z-10"
               />
               <span className="text-base relative z-10">
-                {selectedType 
-                  ? `Continue with Google as ${selectedType === 'CUSTOMER' ? 'Customer' : 'Contractor'}`
-                  : 'Select a role to continue'
-                }
+                Continue with Google
               </span>
-              {selectedType && (
-                <span className="relative z-10 text-xs opacity-60 group-hover:opacity-100 transition-opacity">
-                  →
-                </span>
-              )}
             </button>
-            
-            {!selectedType && (
-              <p className="text-amber-400/60 text-xs text-center mt-3 animate-pulse">
-                ⚡ Select Customer or Contractor above to continue
-              </p>
-            )}
           </div>
 
           {/* Footer */}
-          <div className={`mt-8 text-center transition-all duration-700 delay-700 ${
+          <div className={`mt-8 text-center transition-all duration-700 delay-500 ${
             isVisible ? 'opacity-100' : 'opacity-0'
           }`}>
             <div className="flex items-center justify-center gap-4 text-xs">

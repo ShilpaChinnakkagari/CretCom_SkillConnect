@@ -39,6 +39,240 @@ public class ContractorService {
         log.info("✅ User role updated to CONTRACTOR for userId: {}", userId);
     }
 
+    // ============ NEW METHOD: Save stage data progressively ============
+    public Contractor saveStageData(String userId, Integer stage, Map<String, Object> data) {
+        log.info("📝 Saving stage {} for userId: {}", stage, userId);
+        
+        // Check if user exists
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        // Get existing contractor or create new one
+        Contractor contractor = contractorRepository.findByUserId(userId)
+                .orElse(new Contractor());
+        
+        // Set userId if new
+        if (contractor.getUserId() == null) {
+            contractor.setUserId(userId);
+            contractor.setEmail((String) data.get("email"));
+            contractor.setCreatedAt(LocalDateTime.now());
+            contractor.setStats(new Contractor.ContractorStats());
+        }
+        
+        contractor.setCurrentRegistrationStage(stage);
+        contractor.setUpdatedAt(LocalDateTime.now());
+
+        // ===== STAGE 1: Basic Profile =====
+        if (stage >= 1) {
+            if (data.containsKey("fullName")) contractor.setFullName((String) data.get("fullName"));
+            if (data.containsKey("phoneNumber")) contractor.setPhoneNumber((String) data.get("phoneNumber"));
+            if (data.containsKey("whatsappNumber")) contractor.setWhatsappNumber((String) data.get("whatsappNumber"));
+            if (data.containsKey("languagesSpoken")) contractor.setLanguagesSpoken((List<String>) data.get("languagesSpoken"));
+            if (data.containsKey("aboutMe")) contractor.setAboutMe((String) data.get("aboutMe"));
+            if (data.containsKey("preferredContact")) contractor.setPreferredContact((String) data.get("preferredContact"));
+            if (data.containsKey("profilePhoto")) contractor.setProfilePhoto((String) data.get("profilePhoto"));
+        }
+
+        // ===== STAGE 2: Skills & Trust =====
+        if (stage >= 2) {
+            if (data.containsKey("primaryCategory")) contractor.setPrimaryCategory((String) data.get("primaryCategory"));
+            if (data.containsKey("secondarySkills")) contractor.setSecondarySkills((List<String>) data.get("secondarySkills"));
+            
+            Object yearsObj = data.get("yearsOfExperience");
+            if (yearsObj != null) {
+                if (yearsObj instanceof Integer) {
+                    contractor.setYearsOfExperience((Integer) yearsObj);
+                } else if (yearsObj instanceof String) {
+                    try {
+                        contractor.setYearsOfExperience(Integer.parseInt((String) yearsObj));
+                    } catch (NumberFormatException e) {
+                        contractor.setYearsOfExperience(0);
+                    }
+                }
+            }
+            
+            if (data.containsKey("skillLevel")) contractor.setSkillLevel((String) data.get("skillLevel"));
+            if (data.containsKey("workTypes")) contractor.setWorkTypes((List<String>) data.get("workTypes"));
+            if (data.containsKey("specializations")) contractor.setSpecializations((List<String>) data.get("specializations"));
+            if (data.containsKey("teamSize")) contractor.setTeamSize((String) data.get("teamSize"));
+            if (data.containsKey("idType")) contractor.setIdType((String) data.get("idType"));
+            if (data.containsKey("idNumber")) contractor.setIdNumber((String) data.get("idNumber"));
+            if (data.containsKey("idProofUrl")) contractor.setIdProofUrl((String) data.get("idProofUrl"));
+        }
+
+        // ===== STAGE 3: Pricing & Location =====
+        if (stage >= 3) {
+            if (data.containsKey("pricingType")) contractor.setPricingType((String) data.get("pricingType"));
+            
+            Object baseCharge = data.get("baseServiceCharge");
+            if (baseCharge != null) {
+                if (baseCharge instanceof Double) {
+                    contractor.setBaseServiceCharge((Double) baseCharge);
+                } else if (baseCharge instanceof String) {
+                    try {
+                        contractor.setBaseServiceCharge(Double.parseDouble((String) baseCharge));
+                    } catch (NumberFormatException e) {
+                        contractor.setBaseServiceCharge(0.0);
+                    }
+                }
+            }
+            
+            Object minPrice = data.get("minimumPrice");
+            if (minPrice != null) {
+                if (minPrice instanceof Double) {
+                    contractor.setMinimumPrice((Double) minPrice);
+                } else if (minPrice instanceof String) {
+                    try {
+                        contractor.setMinimumPrice(Double.parseDouble((String) minPrice));
+                    } catch (NumberFormatException e) {
+                        contractor.setMinimumPrice(0.0);
+                    }
+                }
+            }
+            
+            Object maxPrice = data.get("maximumPrice");
+            if (maxPrice != null) {
+                if (maxPrice instanceof Double) {
+                    contractor.setMaximumPrice((Double) maxPrice);
+                } else if (maxPrice instanceof String) {
+                    try {
+                        contractor.setMaximumPrice(Double.parseDouble((String) maxPrice));
+                    } catch (NumberFormatException e) {
+                        contractor.setMaximumPrice(0.0);
+                    }
+                }
+            }
+            
+            Object emergencyCharge = data.get("emergencyCharge");
+            if (emergencyCharge != null) {
+                if (emergencyCharge instanceof Double) {
+                    contractor.setEmergencyCharge((Double) emergencyCharge);
+                } else if (emergencyCharge instanceof String) {
+                    try {
+                        contractor.setEmergencyCharge(Double.parseDouble((String) emergencyCharge));
+                    } catch (NumberFormatException e) {
+                        contractor.setEmergencyCharge(0.0);
+                    }
+                }
+            }
+            
+            if (data.containsKey("priceNegotiable")) contractor.setPriceNegotiable((Boolean) data.get("priceNegotiable"));
+
+            Map<String, Object> locationData = (Map<String, Object>) data.get("location");
+            if (locationData != null) {
+                Contractor.Location location = contractor.getLocation() != null ? contractor.getLocation() : new Contractor.Location();
+                if (locationData.containsKey("address")) location.setAddress((String) locationData.get("address"));
+                if (locationData.containsKey("city")) location.setCity((String) locationData.get("city"));
+                if (locationData.containsKey("state")) location.setState((String) locationData.get("state"));
+                if (locationData.containsKey("country")) location.setCountry((String) locationData.get("country"));
+                if (locationData.containsKey("pincode")) location.setPincode((String) locationData.get("pincode"));
+                contractor.setLocation(location);
+            }
+
+            if (data.containsKey("serviceAreas")) contractor.setServiceAreas((List<String>) data.get("serviceAreas"));
+            
+            Object radius = data.get("serviceRadius");
+            if (radius != null) {
+                if (radius instanceof Integer) {
+                    contractor.setServiceRadius((Integer) radius);
+                } else if (radius instanceof String) {
+                    try {
+                        contractor.setServiceRadius(Integer.parseInt((String) radius));
+                    } catch (NumberFormatException e) {
+                        contractor.setServiceRadius(10);
+                    }
+                }
+            }
+            
+            if (data.containsKey("homeServiceAvailable")) contractor.setHomeServiceAvailable((Boolean) data.get("homeServiceAvailable"));
+            if (data.containsKey("serviceType")) contractor.setServiceType((String) data.get("serviceType"));
+        }
+
+        // ===== STAGE 4: Portfolio =====
+        if (stage >= 4) {
+            List<Map<String, Object>> portfolioData = (List<Map<String, Object>>) data.get("portfolio");
+            if (portfolioData != null && !portfolioData.isEmpty()) {
+                List<Contractor.PortfolioItem> portfolio = new ArrayList<>();
+                for (Map<String, Object> itemData : portfolioData) {
+                    Contractor.PortfolioItem item = new Contractor.PortfolioItem();
+                    if (itemData.containsKey("title")) item.setTitle((String) itemData.get("title"));
+                    if (itemData.containsKey("description")) item.setDescription((String) itemData.get("description"));
+                    if (itemData.containsKey("category")) item.setCategory((String) itemData.get("category"));
+                    if (itemData.containsKey("imageUrls")) item.setImageUrls((List<String>) itemData.get("imageUrls"));
+                    if (itemData.containsKey("videoUrl")) item.setVideoUrl((String) itemData.get("videoUrl"));
+                    if (itemData.containsKey("projectLink")) item.setProjectLink((String) itemData.get("projectLink"));
+                    if (itemData.containsKey("location")) item.setLocation((String) itemData.get("location"));
+                    if (itemData.containsKey("timeTaken")) item.setTimeTaken((String) itemData.get("timeTaken"));
+                    portfolio.add(item);
+                }
+                contractor.setPortfolio(portfolio);
+            }
+
+            List<Map<String, Object>> socialLinksData = (List<Map<String, Object>>) data.get("socialLinks");
+            if (socialLinksData != null && !socialLinksData.isEmpty()) {
+                List<Contractor.SocialLink> socialLinks = new ArrayList<>();
+                for (Map<String, Object> linkData : socialLinksData) {
+                    Contractor.SocialLink link = new Contractor.SocialLink();
+                    if (linkData.containsKey("platform")) link.setPlatform((String) linkData.get("platform"));
+                    if (linkData.containsKey("url")) link.setUrl((String) linkData.get("url"));
+                    socialLinks.add(link);
+                }
+                contractor.setSocialLinks(socialLinks);
+            }
+
+            if (data.containsKey("shopName")) contractor.setShopName((String) data.get("shopName"));
+            if (data.containsKey("shopAddress")) contractor.setShopAddress((String) data.get("shopAddress"));
+            if (data.containsKey("shopPhotos")) contractor.setShopPhotos((List<String>) data.get("shopPhotos"));
+        }
+
+        // ===== STAGE 5: Availability & Complete =====
+        if (stage >= 5) {
+            List<Map<String, Object>> scheduleData = (List<Map<String, Object>>) data.get("weeklySchedule");
+            if (scheduleData != null && !scheduleData.isEmpty()) {
+                List<Contractor.WeeklySchedule> schedule = new ArrayList<>();
+                for (Map<String, Object> dayData : scheduleData) {
+                    Contractor.WeeklySchedule day = new Contractor.WeeklySchedule();
+                    if (dayData.containsKey("day")) day.setDay((String) dayData.get("day"));
+                    if (dayData.containsKey("available")) day.setAvailable((Boolean) dayData.get("available"));
+                    if (dayData.containsKey("startTime")) day.setStartTime((String) dayData.get("startTime"));
+                    if (dayData.containsKey("endTime")) day.setEndTime((String) dayData.get("endTime"));
+                    schedule.add(day);
+                }
+                contractor.setWeeklySchedule(schedule);
+            }
+
+            if (data.containsKey("timeSlots")) contractor.setTimeSlots((List<String>) data.get("timeSlots"));
+            if (data.containsKey("emergencyAvailability")) contractor.setEmergencyAvailability((Boolean) data.get("emergencyAvailability"));
+            if (data.containsKey("holidayWorking")) contractor.setHolidayWorking((Boolean) data.get("holidayWorking"));
+            
+            List<Map<String, Object>> blockedData = (List<Map<String, Object>>) data.get("blockedDates");
+            if (blockedData != null && !blockedData.isEmpty()) {
+                List<Contractor.BlockedDate> blockedDates = new ArrayList<>();
+                for (Map<String, Object> blockedDto : blockedData) {
+                    Contractor.BlockedDate blocked = new Contractor.BlockedDate();
+                    if (blockedDto.containsKey("date")) blocked.setDate(LocalDateTime.parse((String) blockedDto.get("date")));
+                    if (blockedDto.containsKey("reason")) blocked.setReason((String) blockedDto.get("reason"));
+                    blockedDates.add(blocked);
+                }
+                contractor.setBlockedDates(blockedDates);
+            }
+
+            if (data.containsKey("termsAccepted")) contractor.setTermsAccepted((Boolean) data.get("termsAccepted"));
+            
+            // If stage 5, mark registration as complete
+            if (stage == 5) {
+                contractor.setRegistrationComplete(true);
+                contractor.setCurrentRegistrationStage(5);
+                log.info("🎉 Registration COMPLETE for userId: {}", userId);
+            }
+        }
+
+        contractor.setUpdatedAt(LocalDateTime.now());
+
+        log.info("💾 Saving contractor stage {} for user: {}", stage, userId);
+        return contractorRepository.save(contractor);
+    }
+
     public Contractor saveCompleteRegistration(String userId, Map<String, Object> data) {
         log.info("📝 Starting complete registration for userId: {}", userId);
         
@@ -58,6 +292,7 @@ public class ContractorService {
         contractor.setCreatedAt(LocalDateTime.now());
         contractor.setStats(new Contractor.ContractorStats());
         contractor.setRegistrationComplete(true);
+        contractor.setCurrentRegistrationStage(5);
         contractor.setUpdatedAt(LocalDateTime.now());
 
         // STAGE 1: Basic Profile
@@ -154,11 +389,11 @@ public class ContractorService {
         Map<String, Object> locationData = (Map<String, Object>) data.get("location");
         if (locationData != null) {
             Contractor.Location location = new Contractor.Location();
-            location.setAddress((String) locationData.get("address"));
-            location.setCity((String) locationData.get("city"));
-            location.setState((String) locationData.get("state"));
-            location.setCountry((String) locationData.get("country"));
-            location.setPincode((String) locationData.get("pincode"));
+            if (locationData.containsKey("address")) location.setAddress((String) locationData.get("address"));
+            if (locationData.containsKey("city")) location.setCity((String) locationData.get("city"));
+            if (locationData.containsKey("state")) location.setState((String) locationData.get("state"));
+            if (locationData.containsKey("country")) location.setCountry((String) locationData.get("country"));
+            if (locationData.containsKey("pincode")) location.setPincode((String) locationData.get("pincode"));
             contractor.setLocation(location);
         }
 
@@ -186,16 +421,14 @@ public class ContractorService {
             List<Contractor.PortfolioItem> portfolio = new ArrayList<>();
             for (Map<String, Object> itemData : portfolioData) {
                 Contractor.PortfolioItem item = new Contractor.PortfolioItem();
-                item.setTitle((String) itemData.get("title"));
-                item.setDescription((String) itemData.get("description"));
-                item.setCategory((String) itemData.get("category"));
-                item.setImageUrls((List<String>) itemData.get("imageUrls"));
-                item.setVideoUrl((String) itemData.get("videoUrl"));
-                item.setDocumentUrl((String) itemData.get("documentUrl"));
-                item.setProjectLink((String) itemData.get("projectLink"));
-                item.setClientFeedback((String) itemData.get("clientFeedback"));
-                item.setLocation((String) itemData.get("location"));
-                item.setTimeTaken((String) itemData.get("timeTaken"));
+                if (itemData.containsKey("title")) item.setTitle((String) itemData.get("title"));
+                if (itemData.containsKey("description")) item.setDescription((String) itemData.get("description"));
+                if (itemData.containsKey("category")) item.setCategory((String) itemData.get("category"));
+                if (itemData.containsKey("imageUrls")) item.setImageUrls((List<String>) itemData.get("imageUrls"));
+                if (itemData.containsKey("videoUrl")) item.setVideoUrl((String) itemData.get("videoUrl"));
+                if (itemData.containsKey("projectLink")) item.setProjectLink((String) itemData.get("projectLink"));
+                if (itemData.containsKey("location")) item.setLocation((String) itemData.get("location"));
+                if (itemData.containsKey("timeTaken")) item.setTimeTaken((String) itemData.get("timeTaken"));
                 portfolio.add(item);
             }
             contractor.setPortfolio(portfolio);
@@ -206,8 +439,8 @@ public class ContractorService {
             List<Contractor.SocialLink> socialLinks = new ArrayList<>();
             for (Map<String, Object> linkData : socialLinksData) {
                 Contractor.SocialLink link = new Contractor.SocialLink();
-                link.setPlatform((String) linkData.get("platform"));
-                link.setUrl((String) linkData.get("url"));
+                if (linkData.containsKey("platform")) link.setPlatform((String) linkData.get("platform"));
+                if (linkData.containsKey("url")) link.setUrl((String) linkData.get("url"));
                 socialLinks.add(link);
             }
             contractor.setSocialLinks(socialLinks);
@@ -223,10 +456,10 @@ public class ContractorService {
             List<Contractor.WeeklySchedule> schedule = new ArrayList<>();
             for (Map<String, Object> dayData : scheduleData) {
                 Contractor.WeeklySchedule day = new Contractor.WeeklySchedule();
-                day.setDay((String) dayData.get("day"));
-                day.setAvailable((Boolean) dayData.get("available"));
-                day.setStartTime((String) dayData.get("startTime"));
-                day.setEndTime((String) dayData.get("endTime"));
+                if (dayData.containsKey("day")) day.setDay((String) dayData.get("day"));
+                if (dayData.containsKey("available")) day.setAvailable((Boolean) dayData.get("available"));
+                if (dayData.containsKey("startTime")) day.setStartTime((String) dayData.get("startTime"));
+                if (dayData.containsKey("endTime")) day.setEndTime((String) dayData.get("endTime"));
                 schedule.add(day);
             }
             contractor.setWeeklySchedule(schedule);
@@ -241,8 +474,8 @@ public class ContractorService {
             List<Contractor.BlockedDate> blockedDates = new ArrayList<>();
             for (Map<String, Object> blockedDto : blockedData) {
                 Contractor.BlockedDate blocked = new Contractor.BlockedDate();
-                blocked.setDate(LocalDateTime.parse((String) blockedDto.get("date")));
-                blocked.setReason((String) blockedDto.get("reason"));
+                if (blockedDto.containsKey("date")) blocked.setDate(LocalDateTime.parse((String) blockedDto.get("date")));
+                if (blockedDto.containsKey("reason")) blocked.setReason((String) blockedDto.get("reason"));
                 blockedDates.add(blocked);
             }
             contractor.setBlockedDates(blockedDates);

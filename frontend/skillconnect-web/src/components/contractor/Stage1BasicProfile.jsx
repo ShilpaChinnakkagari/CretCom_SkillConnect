@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
+import axios from 'axios';
 
 const languages = [
   'Hindi', 'English', 'Telugu', 'Tamil', 'Kannada',
@@ -51,9 +52,40 @@ const Stage1BasicProfile = ({ formData, updateFormData, onNext, user, loading, s
   const handleSubmit = async () => {
     if (!validate()) return;
 
-    // ✅ Just go to next stage - NO API CALL
-    toast.success('Profile data saved locally');
-    onNext();
+    setLoading(true);
+    try {
+      const userStr = localStorage.getItem('user');
+      const userData = userStr ? JSON.parse(userStr) : null;
+      const userId = userData?.id || userData?.userId;
+
+      const stageData = {
+        userId: userId,
+        stage: 1,
+        fullName: formData.fullName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        whatsappNumber: formData.whatsappNumber,
+        languagesSpoken: formData.languagesSpoken,
+        aboutMe: formData.aboutMe,
+        preferredContact: formData.preferredContact,
+        profilePhoto: formData.profilePhoto
+      };
+
+      console.log('Saving Stage 1:', stageData);
+      const response = await axios.post('http://localhost:8080/contractor/register/stage', stageData, {
+        withCredentials: true
+      });
+
+      if (response.data.success) {
+        toast.success('Profile saved!');
+        onNext();
+      }
+    } catch (error) {
+      console.error('Error saving stage 1:', error);
+      toast.error(error.response?.data?.error || 'Failed to save profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import axios from 'axios';
 
 const pricingTypes = ['FIXED', 'HOURLY', 'PER_PROJECT', 'NEGOTIABLE'];
 const serviceTypes = ['ONSITE', 'OFFSITE', 'BOTH'];
@@ -59,9 +60,43 @@ const Stage3Pricing = ({ formData, updateFormData, onNext, onBack, loading, setL
   const handleSubmit = async () => {
     if (!validate()) return;
 
-    // ✅ Just go to next stage - NO API CALL
-    toast.success('Pricing & location data saved locally');
-    onNext();
+    setLoading(true);
+    try {
+      const userStr = localStorage.getItem('user');
+      const userData = userStr ? JSON.parse(userStr) : null;
+      const userId = userData?.id || userData?.userId;
+
+      const stageData = {
+        userId: userId,
+        stage: 3,
+        pricingType: formData.pricingType,
+        baseServiceCharge: formData.baseServiceCharge,
+        minimumPrice: formData.minimumPrice,
+        maximumPrice: formData.maximumPrice,
+        emergencyCharge: formData.emergencyCharge,
+        priceNegotiable: formData.priceNegotiable,
+        location: formData.location,
+        serviceAreas: formData.serviceAreas || [],
+        serviceRadius: formData.serviceRadius,
+        homeServiceAvailable: formData.homeServiceAvailable,
+        serviceType: formData.serviceType
+      };
+
+      console.log('Saving Stage 3:', stageData);
+      const response = await axios.post('http://localhost:8080/contractor/register/stage', stageData, {
+        withCredentials: true
+      });
+
+      if (response.data.success) {
+        toast.success('Pricing & location saved!');
+        onNext();
+      }
+    } catch (error) {
+      console.error('Error saving stage 3:', error);
+      toast.error(error.response?.data?.error || 'Failed to save pricing');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

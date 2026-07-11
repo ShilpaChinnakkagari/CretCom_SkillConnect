@@ -42,7 +42,7 @@ const ContractorDashboard = () => {
       }
 
       // ✅ FIXED: Added /api prefix
-      const response = await axios.get('/api/contractor/profile', {
+      const response = await axios.get('/contractor/profile', {
         params: { userId: userId }
       });
       

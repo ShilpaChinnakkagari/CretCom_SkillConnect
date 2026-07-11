@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import axios from 'axios';
 
 const categories = {
   'Construction': [
@@ -119,9 +120,42 @@ const Stage2Skills = ({ formData, updateFormData, onNext, onBack, loading, setLo
   const handleSubmit = async () => {
     if (!validate()) return;
 
-    // ✅ Just go to next stage - NO API CALL
-    toast.success('Skills data saved locally');
-    onNext();
+    setLoading(true);
+    try {
+      const userStr = localStorage.getItem('user');
+      const userData = userStr ? JSON.parse(userStr) : null;
+      const userId = userData?.id || userData?.userId;
+
+      const stageData = {
+        userId: userId,
+        stage: 2,
+        primaryCategory: formData.primaryCategory,
+        secondarySkills: formData.secondarySkills || [],
+        yearsOfExperience: formData.yearsOfExperience,
+        skillLevel: formData.skillLevel,
+        workTypes: formData.workTypes || [],
+        specializations: formData.specializations || [],
+        teamSize: formData.teamSize,
+        idType: formData.idType,
+        idNumber: formData.idNumber,
+        idProofUrl: formData.idProofUrl
+      };
+
+      console.log('Saving Stage 2:', stageData);
+      const response = await axios.post('http://localhost:8080/contractor/register/stage', stageData, {
+        withCredentials: true
+      });
+
+      if (response.data.success) {
+        toast.success('Skills saved!');
+        onNext();
+      }
+    } catch (error) {
+      console.error('Error saving stage 2:', error);
+      toast.error(error.response?.data?.error || 'Failed to save skills');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

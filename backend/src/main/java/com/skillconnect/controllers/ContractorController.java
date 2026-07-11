@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/contractor")  // ✅ CHANGED: Removed /api
+@RequestMapping("/contractor")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @Slf4j
@@ -44,6 +44,81 @@ public class ContractorController {
             
         } catch (Exception e) {
             log.error("Error in getProfile: {}", e.getMessage(), e);
+            Map<String, String> response = new HashMap<>();
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // ============ NEW ENDPOINT 1: Save stage data progressively ============
+    @PostMapping("/register/stage")
+    public ResponseEntity<?> saveStageData(@RequestBody Map<String, Object> stageData) {
+        try {
+            log.info("📝 Saving stage data");
+            
+            String userId = (String) stageData.get("userId");
+            if (userId == null || userId.isEmpty()) {
+                Map<String, String> response = new HashMap<>();
+                response.put("error", "userId is required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+            
+            Integer stage = (Integer) stageData.get("stage");
+            if (stage == null || stage < 1 || stage > 5) {
+                Map<String, String> response = new HashMap<>();
+                response.put("error", "Valid stage number (1-5) is required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+            
+            Contractor contractor = contractorService.saveStageData(userId, stage, stageData);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Stage " + stage + " saved successfully");
+            response.put("stage", contractor.getCurrentRegistrationStage());
+            response.put("registrationComplete", contractor.getRegistrationComplete());
+            
+            log.info("✅ Stage {} saved for userId: {}", stage, userId);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Error saving stage data: {}", e.getMessage(), e);
+            Map<String, String> response = new HashMap<>();
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // ============ NEW ENDPOINT 2: Get registration stage to resume ============
+    @GetMapping("/profile/stage")
+    public ResponseEntity<?> getRegistrationStage(@RequestParam String userId) {
+        try {
+            log.info("📊 Getting registration stage for userId: {}", userId);
+            
+            if (userId == null || userId.isEmpty()) {
+                Map<String, String> response = new HashMap<>();
+                response.put("error", "userId is required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            
+            if (!contractorService.contractorExists(userId)) {
+                response.put("exists", false);
+                response.put("stage", 1);
+                response.put("registrationComplete", false);
+            } else {
+                Contractor contractor = contractorService.getContractorByUserId(userId);
+                response.put("exists", true);
+                response.put("stage", contractor.getCurrentRegistrationStage() != null ? contractor.getCurrentRegistrationStage() : 1);
+                response.put("registrationComplete", contractor.getRegistrationComplete());
+                response.put("contractor", contractor);
+            }
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Error getting registration stage: {}", e.getMessage(), e);
             Map<String, String> response = new HashMap<>();
             response.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);

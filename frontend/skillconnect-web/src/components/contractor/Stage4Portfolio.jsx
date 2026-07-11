@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import axios from 'axios';
 
 const socialPlatforms = ['INSTAGRAM', 'YOUTUBE', 'FACEBOOK', 'LINKEDIN', 'TWITTER', 'WHATSAPP', 'TELEGRAM', 'SNAPCHAT', 'PINTEREST', 'OTHER'];
 
@@ -104,9 +105,37 @@ const Stage4Portfolio = ({ formData, updateFormData, onNext, onBack, loading, se
   };
 
   const handleSubmit = async () => {
-    // ✅ Just go to next stage - NO API CALL
-    toast.success('Portfolio data saved locally');
-    onNext();
+    setLoading(true);
+    try {
+      const userStr = localStorage.getItem('user');
+      const userData = userStr ? JSON.parse(userStr) : null;
+      const userId = userData?.id || userData?.userId;
+
+      const stageData = {
+        userId: userId,
+        stage: 4,
+        portfolio: formData.portfolio || [],
+        socialLinks: formData.socialLinks || [],
+        shopName: formData.shopName,
+        shopAddress: formData.shopAddress,
+        shopPhotos: formData.shopPhotos || []
+      };
+
+      console.log('Saving Stage 4:', stageData);
+      const response = await axios.post('http://localhost:8080/contractor/register/stage', stageData, {
+        withCredentials: true
+      });
+
+      if (response.data.success) {
+        toast.success('Portfolio saved!');
+        onNext();
+      }
+    } catch (error) {
+      console.error('Error saving stage 4:', error);
+      toast.error(error.response?.data?.error || 'Failed to save portfolio');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

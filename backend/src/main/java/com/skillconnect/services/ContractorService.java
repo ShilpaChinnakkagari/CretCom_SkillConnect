@@ -51,6 +51,12 @@ public class ContractorService {
         log.info("✅ User role updated to CONTRACTOR for userId: {}", userId);
     }
 
+    // ============ GET ALL CONTRACTORS ============
+    public List<Contractor> getAllContractors() {
+        log.info("📄 Fetching all contractors");
+        return contractorRepository.findAll();
+    }
+
     // ============ SAVE COMPLETE REGISTRATION ============
     public Contractor saveCompleteRegistration(String userId, Map<String, Object> data) {
         log.info("📝 Starting complete registration for userId: {}", userId);

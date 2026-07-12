@@ -92,13 +92,10 @@ public class PostService {
         return enrichPostsWithContractorDetails(posts);
     }
 
-    // ===== GET FEED POSTS - FIXED: Shows ALL active posts =====
+    // ===== GET FEED POSTS =====
     public List<Post> getFeedPosts(String userId) {
         log.info("📰 Fetching feed for user: {}", userId);
-        
-        // ✅ FIXED: Show ALL active posts regardless of following
         List<Post> posts = postRepository.findByActiveTrueOrderByCreatedAtDesc();
-        
         return enrichPostsWithContractorDetails(posts);
     }
 
@@ -205,7 +202,7 @@ public class PostService {
         return updatedPost;
     }
 
-    // ===== DELETE POST =====
+    // ===== ✅ DELETE POST - FIXED =====
     public void deletePost(String postId, String userId) {
         log.info("🗑️ Deleting post: {} by user: {}", postId, userId);
 
@@ -219,8 +216,9 @@ public class PostService {
         post.setActive(false);
         postRepository.save(post);
 
+        // ✅ FIX: Decrement totalPosts when post is deleted
         Contractor contractor = contractorRepository.findByUserId(userId).orElse(null);
-        if (contractor != null && contractor.getTotalPosts() > 0) {
+        if (contractor != null && contractor.getTotalPosts() != null && contractor.getTotalPosts() > 0) {
             contractor.setTotalPosts(contractor.getTotalPosts() - 1);
             contractorRepository.save(contractor);
         }

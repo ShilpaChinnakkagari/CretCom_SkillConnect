@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/contractor")
@@ -50,6 +51,20 @@ public class ContractorController {
             Map<String, String> response = new HashMap<>();
             response.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // ============ GET ALL CONTRACTORS ============
+    @GetMapping
+    public ResponseEntity<?> getAllContractors() {
+        try {
+            log.info("📄 Fetching all contractors");
+            List<Contractor> contractors = contractorService.getAllContractors();
+            return ResponseEntity.ok(contractors);
+        } catch (Exception e) {
+            log.error("Error fetching contractors: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -218,6 +233,72 @@ public class ContractorController {
             ));
         } catch (Exception e) {
             log.error("Error unfollowing contractor: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ============ GET FOLLOWING LIST ============
+    @GetMapping("/following/{userId}")
+    public ResponseEntity<?> getFollowingList(@PathVariable String userId) {
+        try {
+            log.info("📄 Fetching following list for userId: {}", userId);
+            Contractor contractor = contractorService.getContractorByUserId(userId);
+            List<String> followingIds = contractor.getFollowing() != null ? contractor.getFollowing() : new ArrayList<>();
+            
+            List<Map<String, Object>> followingDetails = new ArrayList<>();
+            for (String followingId : followingIds) {
+                try {
+                    Contractor followingContractor = contractorService.getContractorByUserId(followingId);
+                    Map<String, Object> details = new HashMap<>();
+                    details.put("id", followingContractor.getId());
+                    details.put("userId", followingContractor.getUserId());
+                    details.put("fullName", followingContractor.getFullName());
+                    details.put("profilePhoto", followingContractor.getProfilePhoto());
+                    details.put("primaryCategory", followingContractor.getPrimaryCategory());
+                    details.put("isFollowing", true);
+                    followingDetails.add(details);
+                } catch (Exception e) {
+                    log.warn("Could not fetch details for following user: {}", followingId);
+                }
+            }
+            
+            return ResponseEntity.ok(followingDetails);
+        } catch (Exception e) {
+            log.error("Error getting following list: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ============ GET FOLLOWERS LIST ============
+    @GetMapping("/followers/{userId}")
+    public ResponseEntity<?> getFollowersList(@PathVariable String userId) {
+        try {
+            log.info("📄 Fetching followers list for userId: {}", userId);
+            Contractor contractor = contractorService.getContractorByUserId(userId);
+            List<String> followerIds = contractor.getFollowers() != null ? contractor.getFollowers() : new ArrayList<>();
+            
+            List<Map<String, Object>> followersDetails = new ArrayList<>();
+            for (String followerId : followerIds) {
+                try {
+                    Contractor followerContractor = contractorService.getContractorByUserId(followerId);
+                    Map<String, Object> details = new HashMap<>();
+                    details.put("id", followerContractor.getId());
+                    details.put("userId", followerContractor.getUserId());
+                    details.put("fullName", followerContractor.getFullName());
+                    details.put("profilePhoto", followerContractor.getProfilePhoto());
+                    details.put("primaryCategory", followerContractor.getPrimaryCategory());
+                    details.put("isFollowing", true);
+                    followersDetails.add(details);
+                } catch (Exception e) {
+                    log.warn("Could not fetch details for follower user: {}", followerId);
+                }
+            }
+            
+            return ResponseEntity.ok(followersDetails);
+        } catch (Exception e) {
+            log.error("Error getting followers list: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
         }

@@ -13,6 +13,7 @@ const Sidebar = ({
 
   const navItems = [
     { id: 'home', label: '🏠 Home', icon: '🏠' },
+    { id: 'search', label: '🔍 Search', icon: '🔍' },
     { id: 'analytics', label: '📊 Analytics', icon: '📊' },
     { id: 'bookings', label: '📅 Bookings', icon: '📅' },
     { id: 'posts', label: '📰 Posts', icon: '📰' },

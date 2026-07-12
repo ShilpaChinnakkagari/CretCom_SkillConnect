@@ -16,6 +16,8 @@ import Analytics from '../components/contractor/Analytics';
 import Messages from '../components/contractor/Messages';
 import Profile from '../components/contractor/Profile';
 import PostCard from '../components/contractor/PostCard';
+import SearchFilterSidebar from '../components/contractor/SearchFilterSidebar';
+import ContractorProfileViewer from '../components/contractor/ContractorProfileViewer';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
 axios.defaults.withCredentials = true;
@@ -33,6 +35,8 @@ const ContractorDashboard = () => {
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
   const [recommended, setRecommended] = useState([]);
+  const [allContractors, setAllContractors] = useState([]);
+  const [filteredContractors, setFilteredContractors] = useState([]);
   
   // ===== UI STATES =====
   const [activeTab, setActiveTab] = useState('home');
@@ -42,6 +46,10 @@ const ContractorDashboard = () => {
   const [showStoryViewer, setShowStoryViewer] = useState(false);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  
+  // ===== PROFILE VIEWER STATES =====
+  const [selectedContractorId, setSelectedContractorId] = useState(null);
+  const [showProfileViewer, setShowProfileViewer] = useState(false);
   
   // ===== REF TO PREVENT MULTIPLE FETCHES =====
   const hasFetched = useRef(false);
@@ -93,23 +101,27 @@ const ContractorDashboard = () => {
 
       console.log('🟢 Fetching data for userId:', userId);
 
+      // Profile
       const profileRes = await axios.get(`http://localhost:8080/contractor/profile`, {
         params: { userId: userId },
         withCredentials: true
       });
       setProfile(profileRes.data);
 
+      // Posts
       const postsRes = await axios.get('http://localhost:8080/posts/feed', {
         withCredentials: true
       });
       console.log('📰 Feed posts received:', postsRes.data?.length || 0);
       setPosts(postsRes.data || []);
 
+      // Stories
       const storiesRes = await axios.get('http://localhost:8080/stories/feed', {
         withCredentials: true
       });
       setStories(storiesRes.data || []);
 
+      // Bookings
       try {
         const bookingsRes = await axios.get('http://localhost:8080/bookings/contractor', {
           withCredentials: true
@@ -124,24 +136,33 @@ const ContractorDashboard = () => {
         }
       }
 
+      // ===== FOLLOWERS - FIXED: Expecting array of user objects =====
       try {
         const followersRes = await axios.get(`http://localhost:8080/contractor/followers/${userId}`, {
           withCredentials: true
         });
-        setFollowers(followersRes.data || []);
+        console.log('👥 Followers data:', followersRes.data);
+        // ✅ Set followers as array (already objects from backend)
+        setFollowers(Array.isArray(followersRes.data) ? followersRes.data : []);
       } catch (e) {
+        console.error('Error fetching followers:', e);
         setFollowers([]);
       }
 
+      // ===== FOLLOWING - FIXED: Expecting array of user objects =====
       try {
         const followingRes = await axios.get(`http://localhost:8080/contractor/following/${userId}`, {
           withCredentials: true
         });
-        setFollowing(followingRes.data || []);
+        console.log('👤 Following data:', followingRes.data);
+        // ✅ Set following as array (already objects from backend)
+        setFollowing(Array.isArray(followingRes.data) ? followingRes.data : []);
       } catch (e) {
+        console.error('Error fetching following:', e);
         setFollowing([]);
       }
 
+      // Recommended
       try {
         const recommendedRes = await axios.get('http://localhost:8080/contractor/recommended', {
           withCredentials: true
@@ -149,6 +170,20 @@ const ContractorDashboard = () => {
         setRecommended(recommendedRes.data || []);
       } catch (e) {
         setRecommended([]);
+      }
+
+      // All Contractors
+      try {
+        const contractorsRes = await axios.get('http://localhost:8080/contractor', {
+          withCredentials: true
+        });
+        console.log('📄 All contractors fetched:', contractorsRes.data?.length || 0);
+        setAllContractors(contractorsRes.data || []);
+        setFilteredContractors(contractorsRes.data || []);
+      } catch (e) {
+        console.error('Error fetching contractors:', e);
+        setAllContractors([]);
+        setFilteredContractors([]);
       }
 
     } catch (error) {
@@ -176,6 +211,8 @@ const ContractorDashboard = () => {
 
   const handleFollowToggle = async (targetUserId, isFollowing) => {
     try {
+      console.log('Follow toggle called for:', targetUserId, 'Current state:', isFollowing);
+      
       if (isFollowing) {
         await axios.post(`http://localhost:8080/contractor/unfollow/${targetUserId}`, {}, {
           withCredentials: true
@@ -190,8 +227,13 @@ const ContractorDashboard = () => {
       fetchAllData();
     } catch (error) {
       console.error('Error following/unfollowing:', error);
-      toast.error('Failed to update follow status');
+      toast.error(error.response?.data?.error || 'Failed to update follow status');
     }
+  };
+
+  const handleViewProfile = (contractorId) => {
+    setSelectedContractorId(contractorId);
+    setShowProfileViewer(true);
   };
 
   const handleLike = async (postId) => {
@@ -243,18 +285,21 @@ const ContractorDashboard = () => {
     }
   };
 
-  // ===== HANDLE POST DELETED =====
   const handlePostDeleted = (postId) => {
     setPosts(posts.filter(p => p.id !== postId));
     toast.success('Post removed');
   };
 
-  // ===== HANDLE POST EDITED =====
   const handlePostEdited = (updatedPost) => {
     setPosts(posts.map(p => 
       p.id === updatedPost.id ? updatedPost : p
     ));
     toast.success('Post updated!');
+  };
+
+  // ===== FILTER CONTRACTORS HANDLER =====
+  const handleFilterContractors = (filtered) => {
+    setFilteredContractors(filtered);
   };
 
   // ===== RENDER CONTENT =====
@@ -290,6 +335,89 @@ const ContractorDashboard = () => {
         return <Messages />;
       case 'profile':
         return <Profile />;
+      case 'search': {
+        return (
+          <div className="space-y-4">
+            <SearchFilterSidebar 
+              contractors={allContractors}
+              onFilter={handleFilterContractors}
+              onFollowToggle={handleFollowToggle}
+              onNavigateToSearch={() => setActiveTab('search')}
+            />
+            
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-white">🔍 Find Contractors</h2>
+                <span className="text-sm text-gray-400">{filteredContractors.length} contractors found</span>
+              </div>
+              {filteredContractors.length === 0 ? (
+                <div className="rounded-xl p-8 text-center" style={{ background: '#161B22', border: '1px solid #30363D' }}>
+                  <p className="text-gray-400">No contractors found matching your criteria</p>
+                  <button 
+                    onClick={() => {
+                      setFilteredContractors(allContractors);
+                    }}
+                    className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
+                  >
+                    Show All Contractors
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredContractors.map((contractor) => {
+                    const isFollowingUser = following.some(f => f.userId === contractor.userId);
+                    return (
+                      <div key={contractor.id} className="rounded-xl p-4" style={{ background: '#161B22', border: '1px solid #30363D' }}>
+                        <div className="flex items-start gap-3">
+                          <div className="w-12 h-12 rounded-full bg-gray-700 overflow-hidden flex-shrink-0">
+                            {contractor.profilePhoto ? (
+                              <img src={contractor.profilePhoto} alt={contractor.fullName} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xl text-gray-400">👤</div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-white font-semibold truncate">{contractor.fullName}</p>
+                              {contractor.isVerified && (
+                                <span className="text-green-400 text-xs">✔️</span>
+                              )}
+                            </div>
+                            <p className="text-blue-400 text-sm">{contractor.primaryCategory}</p>
+                            <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
+                              <span>⭐ {contractor.averageRating?.toFixed(1) || 0}</span>
+                              <span>📍 {contractor.serviceAreas?.[0] || 'N/A'}</span>
+                              <span>💰 ₹{contractor.minimumPrice || 0}</span>
+                            </div>
+                            <div className="flex gap-2 mt-2">
+                              <button
+                                onClick={() => handleViewProfile(contractor.userId)}
+                                className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs"
+                              >
+                                View Profile
+                              </button>
+                              <button
+                                onClick={() => handleFollowToggle(contractor.userId, isFollowingUser)}
+                                className={`px-3 py-1 rounded-lg transition text-xs ${
+                                  isFollowingUser
+                                    ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                                    : 'bg-green-600 text-white hover:bg-green-700'
+                                }`}
+                              >
+                                {isFollowingUser ? '✅ Following' : '+ Follow'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
       case 'posts': {
         const myPosts = posts.filter(p => p.contractorId === currentUserId);
         
@@ -315,7 +443,6 @@ const ContractorDashboard = () => {
                 </button>
               </div>
             ) : (
-              // ✅ FIXED: Using PostCard component for Edit + Delete
               myPosts.map((post) => (
                 <PostCard
                   key={post.id}
@@ -416,6 +543,7 @@ const ContractorDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex gap-6">
           
+          {/* ===== LEFT SIDEBAR ===== */}
           <div className="hidden lg:block w-64 flex-shrink-0">
             <Sidebar 
               user={user}
@@ -430,29 +558,34 @@ const ContractorDashboard = () => {
             />
           </div>
 
+          {/* ===== CENTER CONTENT ===== */}
           <div className="flex-1 min-w-0">
             {renderContent()}
           </div>
 
-          <div className="hidden xl:block w-72 flex-shrink-0">
+          {/* ===== RIGHT SIDEBAR ===== */}
+          <div className="hidden xl:block w-72 flex-shrink-0 space-y-4">
             <RightSidebar 
               profile={profile}
               bookings={bookings}
               recommended={recommended}
               onRefresh={handleRefresh}
               onFollowToggle={handleFollowToggle}
+              followingList={following.map(f => f.userId)}
             />
           </div>
 
         </div>
       </div>
 
+      {/* ===== BOTTOM NAVIGATION (Mobile) ===== */}
       <MobileNav 
         activeTab={activeTab} 
         onTabChange={setActiveTab}
         onCreatePost={() => setShowCreatePost(true)}
       />
 
+      {/* ===== MODALS ===== */}
       {showFollowersModal && (
         <FollowersModal 
           type="followers"
@@ -486,6 +619,16 @@ const ContractorDashboard = () => {
           stories={stories}
           initialIndex={selectedStoryIndex}
           onClose={() => setShowStoryViewer(false)}
+        />
+      )}
+
+      {/* ===== PROFILE VIEWER MODAL ===== */}
+      {showProfileViewer && selectedContractorId && (
+        <ContractorProfileViewer
+          contractorId={selectedContractorId}
+          onClose={() => setShowProfileViewer(false)}
+          onFollowToggle={handleFollowToggle}
+          followingList={following.map(f => f.userId)}
         />
       )}
 

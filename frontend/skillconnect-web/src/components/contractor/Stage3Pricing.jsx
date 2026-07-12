@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import AddressAutocomplete from '../AddressAutocomplete';
 
 const pricingTypes = ['FIXED', 'HOURLY', 'PER_PROJECT', 'NEGOTIABLE'];
 const serviceTypes = ['ONSITE', 'OFFSITE', 'BOTH'];
@@ -8,6 +9,8 @@ const serviceTypes = ['ONSITE', 'OFFSITE', 'BOTH'];
 const Stage3Pricing = ({ formData, updateFormData, onNext, onBack, loading, setLoading }) => {
   const [errors, setErrors] = useState({});
   const [newArea, setNewArea] = useState('');
+  const [resetKey, setResetKey] = useState(0);
+  const inputRef = useRef(null);
 
   // ===== STARS (SUBTLE) =====
   const stars = Array.from({ length: 150 }, (_, i) => ({
@@ -36,6 +39,31 @@ const Stage3Pricing = ({ formData, updateFormData, onNext, onBack, loading, setL
     });
   };
 
+  // ✅ Reset the input field
+  const resetServiceAreaInput = () => {
+    setNewArea('');
+    setResetKey(prev => prev + 1); // Force re-render of AddressAutocomplete
+  };
+
+  // ✅ Handle Service Area autocomplete selection
+  const handleServiceAreaSelect = (areaData) => {
+    const areaName = areaData.address || areaData.label || areaData;
+    const currentAreas = formData.serviceAreas || [];
+    
+    if (currentAreas.includes(areaName)) {
+      toast.error('Location already added');
+      resetServiceAreaInput();
+      return;
+    }
+
+    updateFormData({
+      serviceAreas: [...currentAreas, areaName]
+    });
+    resetServiceAreaInput();
+    setErrors(prev => ({ ...prev, serviceAreas: '' }));
+    toast.success('Service area added!');
+  };
+
   const handleAddServiceArea = () => {
     if (!newArea.trim()) {
       toast.error('Please enter a location');
@@ -45,14 +73,16 @@ const Stage3Pricing = ({ formData, updateFormData, onNext, onBack, loading, setL
     const currentAreas = formData.serviceAreas || [];
     if (currentAreas.includes(newArea.trim())) {
       toast.error('Location already added');
+      resetServiceAreaInput();
       return;
     }
 
     updateFormData({
       serviceAreas: [...currentAreas, newArea.trim()]
     });
-    setNewArea('');
+    resetServiceAreaInput();
     setErrors(prev => ({ ...prev, serviceAreas: '' }));
+    toast.success('Service area added!');
   };
 
   const handleRemoveServiceArea = (area) => {
@@ -147,7 +177,7 @@ const Stage3Pricing = ({ formData, updateFormData, onNext, onBack, loading, setL
         <div className="absolute bottom-1/3 -right-48 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl"></div>
       </div>
 
-      {/* ===== INNER CARD - SAME AS STAGE 1 & 2 ===== */}
+      {/* ===== INNER CARD ===== */}
       <div className="max-w-6xl mx-auto relative z-10">
         <div className="bg-white rounded-2xl p-10 shadow-2xl">
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Pricing & Location</h2>
@@ -308,24 +338,26 @@ const Stage3Pricing = ({ formData, updateFormData, onNext, onBack, loading, setL
               </div>
             </div>
 
-            {/* Service Areas */}
+            {/* Service Areas - WITH AUTOCOMPLETE & RESET */}
             <div className="border-t border-gray-200 pt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Service Areas <span className="text-red-500">*</span>
               </label>
               
               <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  value={newArea}
-                  onChange={(e) => setNewArea(e.target.value)}
-                  placeholder="Enter location (e.g., Andheri, Mumbai)"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800 placeholder-gray-400"
-                />
+                <div className="flex-1">
+                  <AddressAutocomplete
+                    key={resetKey}
+                    value={newArea}
+                    onChange={handleServiceAreaSelect}
+                    placeholder="Search and add service areas..."
+                    className="w-full"
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={handleAddServiceArea}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition whitespace-nowrap"
                 >
                   + Add
                 </button>

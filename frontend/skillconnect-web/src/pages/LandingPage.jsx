@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import AuthModal from '../components/AuthModal';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 const LandingPage = () => {
   const [isDark, setIsDark] = useState(true);
@@ -148,12 +149,12 @@ const LandingPage = () => {
     );
   };
 
-  const stars = Array.from({ length: 100 }, (_, i) => ({
+  const stars = Array.from({ length: 200 }, (_, i) => ({
     id: i,
-    size: Math.random() * 2 + 1,
+    size: Math.random() * 2 + 2,
     x: Math.random() * 100,
     y: Math.random() * 100,
-    duration: 2 + Math.random() * 4,
+    duration: 3 + Math.random() * 4,
     delay: Math.random() * 3,
     opacity: 0.2 + Math.random() * 0.5,
   }));
@@ -507,7 +508,7 @@ const LandingPage = () => {
                     <div className="relative">
                       <div className="w-[300px] h-[200px] bg-gradient-to-br from-indigo-900/50 to-purple-900/50 rounded-xl flex items-center justify-center">
                         <img 
-                          src="C:\CretCom Projects\skillconnect\laptop.jpeg" 
+                          src="/laptop.jpeg" 
                           alt="Laptop" 
                           className="w-full h-full object-cover rounded-xl"
                           onError={(e) => {
@@ -650,6 +651,9 @@ const LandingPage = () => {
         </section>
 
       </div>
+
+      {/* ===== LANGUAGE SWITCHER ===== */}
+      <LanguageSwitcher />
 
       <style>{`
         .snap-y {

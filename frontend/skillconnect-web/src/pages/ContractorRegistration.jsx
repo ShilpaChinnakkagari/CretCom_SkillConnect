@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 import Stage1BasicProfile from '../components/contractor/Stage1BasicProfile';
 import Stage2Skills from '../components/contractor/Stage2Skills';
@@ -18,6 +19,19 @@ const ContractorRegistration = () => {
   const [user, setUser] = useState(null);
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [existingContractor, setExistingContractor] = useState(null);
+
+  const stars = Array.from({ length: 200 }, (_, i) => ({
+    id: i,
+    size: Math.random() * 2.5 + 0.5,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    duration: 10 + Math.random() * 15,
+    delay: Math.random() * 6,
+    opacity: 0.3 + Math.random() * 0.7,
+    isShining: Math.random() > 0.6,
+    shineDuration: 1.5 + Math.random() * 2,
+    shineDelay: Math.random() * 5,
+  }));
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -107,7 +121,6 @@ const ContractorRegistration = () => {
         return;
       }
 
-      // ============ FIX: Check registration stage to resume ============
       const response = await axios.get('/contractor/profile/stage', {
         params: { userId: userId }
       });
@@ -119,15 +132,12 @@ const ContractorRegistration = () => {
       }
       
       if (response.data.exists && response.data.contractor) {
-        // Resume from saved stage
         const contractor = response.data.contractor;
         setExistingContractor(contractor);
         
-        // Populate form data with saved contractor data
         const savedStage = contractor.currentRegistrationStage || 1;
-        setCurrentStage(savedStage + 1); // Go to next stage after saved
+        setCurrentStage(savedStage + 1);
         
-        // Load saved data into form
         setFormData(prev => ({
           ...prev,
           fullName: contractor.fullName || prev.fullName,
@@ -225,11 +235,37 @@ const ContractorRegistration = () => {
 
   if (checkingProfile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Checking your profile...</p>
+      <div className="relative min-h-screen flex items-center justify-center bg-[#0a0a12] overflow-hidden">
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          {stars.map((star) => (
+            <div
+              key={star.id}
+              className={`absolute rounded-full ${star.isShining ? 'star-shining' : 'star-float'}`}
+              style={{
+                width: `${star.size}px`,
+                height: `${star.size}px`,
+                top: `${star.y}%`,
+                left: `${star.x}%`,
+                background: star.isShining 
+                  ? 'radial-gradient(circle, rgba(255,255,255,1), rgba(255,255,255,0.5))'
+                  : 'white',
+                opacity: star.opacity,
+                boxShadow: star.isShining 
+                  ? `0 0 ${star.size * 6}px rgba(255,255,255,0.8), 0 0 ${star.size * 12}px rgba(255,255,255,0.4)`
+                  : `0 0 ${star.size * 2}px rgba(255,255,255,${star.opacity * 0.15})`,
+                '--duration': `${star.duration}s`,
+                '--delay': `${star.delay}s`,
+                '--shine-duration': `${star.shineDuration}s`,
+                '--shine-delay': `${star.shineDelay}s`,
+              }}
+            />
+          ))}
         </div>
+        <div className="text-center relative z-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-400">Checking your profile...</p>
+        </div>
+        <LanguageSwitcher />
       </div>
     );
   }
@@ -300,49 +336,127 @@ const ContractorRegistration = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="relative min-h-screen py-8 px-4 overflow-hidden bg-[#0a0a12]">
+
+      {/* ===== OUTER BACKGROUND STARS ===== */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {stars.map((star) => (
+          <div
+            key={star.id}
+            className={`absolute rounded-full ${star.isShining ? 'star-shining' : 'star-float'}`}
+            style={{
+              width: `${star.size}px`,
+              height: `${star.size}px`,
+              top: `${star.y}%`,
+              left: `${star.x}%`,
+              background: star.isShining 
+                ? 'radial-gradient(circle, rgba(255,255,255,1), rgba(255,255,255,0.5))'
+                : 'white',
+              opacity: star.opacity,
+              boxShadow: star.isShining 
+                ? `0 0 ${star.size * 6}px rgba(255,255,255,0.8), 0 0 ${star.size * 12}px rgba(255,255,255,0.4)`
+                : `0 0 ${star.size * 2}px rgba(255,255,255,${star.opacity * 0.15})`,
+              '--duration': `${star.duration}s`,
+              '--delay': `${star.delay}s`,
+              '--shine-duration': `${star.shineDuration}s`,
+              '--shine-delay': `${star.shineDelay}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* ===== OUTER GLOW ORBS ===== */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 -left-48 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 -right-48 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+      </div>
+
+      {/* ===== MAIN CONTENT - 70% WIDE ===== */}
+      <div className="max-w-5xl mx-auto px-4 relative z-10">
+        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Become a Service Provider</h1>
-          <p className="text-gray-600 mt-2">Complete your profile to start receiving bookings</p>
+          <h1 className="text-3xl font-bold text-white">Become a Service Provider</h1>
+          <p className="text-gray-300 mt-2">Complete your profile to start receiving bookings</p>
         </div>
 
+        {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex justify-between mb-2">
-            <span className="text-sm font-medium text-primary-600">
+            <span className="text-sm font-medium text-indigo-400">
               Stage {currentStage} of {totalStages}
             </span>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-400">
               {Math.round((currentStage / totalStages) * 100)}% Complete
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div className="w-full bg-gray-700/50 rounded-full h-2.5">
             <div
-              className="bg-primary-600 h-2.5 rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-2.5 rounded-full transition-all duration-500"
               style={{ width: `${(currentStage / totalStages) * 100}%` }}
             ></div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8">
+        {/* Inner Card - Glass Effect */}
+        <div 
+          className="rounded-2xl p-6 md:p-8 border border-white/10"
+          style={{
+            background: 'linear-gradient(135deg, rgba(17, 17, 27, 0.95), rgba(30, 27, 45, 0.95))',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.3), inset 0 0 60px rgba(255,255,255,0.02)',
+          }}
+        >
           {renderStage()}
         </div>
 
+        {/* Dots */}
         <div className="flex justify-center mt-6 gap-2">
           {[...Array(totalStages)].map((_, index) => (
             <div
               key={index}
               className={`w-3 h-3 rounded-full transition-colors ${
                 index + 1 === currentStage
-                  ? 'bg-primary-600'
+                  ? 'bg-indigo-500'
                   : index + 1 < currentStage
-                  ? 'bg-primary-300'
-                  : 'bg-gray-300'
+                  ? 'bg-indigo-400/50'
+                  : 'bg-gray-600'
               }`}
             />
           ))}
         </div>
       </div>
+
+      <LanguageSwitcher />
+
+      <style>{`
+        @keyframes float {
+          0% { transform: translate(0, 0) scale(1); }
+          25% { transform: translate(10px, -15px) scale(1.1); }
+          50% { transform: translate(-5px, 10px) scale(0.9); }
+          75% { transform: translate(15px, 5px) scale(1.05); }
+          100% { transform: translate(0, 0) scale(1); }
+        }
+        .star-float {
+          animation: float var(--duration) ease-in-out infinite;
+          animation-delay: var(--delay);
+          will-change: transform, opacity;
+        }
+
+        @keyframes starShine {
+          0% { transform: scale(1) rotate(0deg); opacity: 0.3; }
+          25% { transform: scale(1.8) rotate(45deg); opacity: 1; }
+          50% { transform: scale(0.7) rotate(90deg); opacity: 0.5; }
+          75% { transform: scale(2) rotate(135deg); opacity: 0.9; }
+          100% { transform: scale(1) rotate(180deg); opacity: 0.3; }
+        }
+        .star-shining {
+          animation: starShine var(--shine-duration) ease-in-out infinite;
+          animation-delay: var(--shine-delay);
+          will-change: transform, opacity;
+        }
+      `}</style>
     </div>
   );
 };

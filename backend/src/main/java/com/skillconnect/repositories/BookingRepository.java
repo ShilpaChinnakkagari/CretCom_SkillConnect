@@ -9,15 +9,15 @@ import java.util.List;
 @Repository
 public interface BookingRepository extends MongoRepository<Booking, String> {
 
-    List<Booking> findByCustomerId(String customerId);
+    List<Booking> findByCustomerIdOrderByCreatedAtDesc(String customerId);
 
-    List<Booking> findByContractorId(String contractorId);
+    List<Booking> findByContractorIdOrderByCreatedAtDesc(String contractorId);
+
+    List<Booking> findAllByOrderByCreatedAtDesc();
+
+    List<Booking> findByStatus(String status);
 
     List<Booking> findByCustomerIdAndStatus(String customerId, String status);
 
     List<Booking> findByContractorIdAndStatus(String contractorId, String status);
-
-    long countByContractorIdAndStatus(String contractorId, String status);
-
-    long countByCustomerId(String customerId);
 }

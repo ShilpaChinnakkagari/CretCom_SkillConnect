@@ -20,53 +20,59 @@ public class GoogleAuthService {
     private final UserRepository userRepository;
 
     public AuthResponse authenticateWithGoogle(GoogleAuthRequest request) {
-        try {
-            FirebaseToken decodedToken = FirebaseAuth.getInstance()
-                    .verifyIdToken(request.getIdToken());
+        log.info("🔐 Authenticating with Google");
 
+        try {
+            String idToken = request.getIdToken();  // ✅ FIXED: getIdToken()
+            
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
             String email = decodedToken.getEmail();
             String name = decodedToken.getName();
             String picture = decodedToken.getPicture();
-            boolean emailVerified = decodedToken.isEmailVerified();
 
-            log.info("Google user: email={}, name={}", email, name);
+            log.info("✅ Google user verified: {}", email);
 
+            // Check if user exists
             User user = userRepository.findByEmail(email).orElse(null);
             boolean isNewUser = false;
 
             if (user == null) {
+                // Create new user
                 user = new User();
                 user.setEmail(email);
                 user.setName(name);
                 user.setProfilePicture(picture);
                 user.setAuthProvider("GOOGLE");
-                user.setVerified(emailVerified);
-                user.setActive(true);
+                user.setIsVerified(true);
+                user.setIsActive(true);
                 user.setCreatedAt(LocalDateTime.now());
                 user.setUpdatedAt(LocalDateTime.now());
-
-                user = userRepository.save(user);
+                user.setUserType(request.getUserType() != null ? request.getUserType() : "CUSTOMER");
+                user.setRole(request.getUserType() != null ? request.getUserType() : "CUSTOMER");
+                userRepository.save(user);
                 isNewUser = true;
-                log.info("✅ New user registered via Firebase Google: {}", email);
+                log.info("✅ New user created via Google: {}", email);
             } else {
-                if (user.getProfilePicture() == null && picture != null) {
-                    user.setProfilePicture(picture);
-                }
+                // Update existing user
+                user.setName(name);
+                user.setProfilePicture(picture);
+                user.setUpdatedAt(LocalDateTime.now());
                 user.setLastLogin(LocalDateTime.now());
-                user = userRepository.save(user);
-                log.info("✅ User logged in via Firebase Google: {}", email);
+                userRepository.save(user);
+                log.info("✅ User updated via Google: {}", email);
             }
 
+            // Build response
             AuthResponse response = new AuthResponse();
             response.setUserId(user.getId());
             response.setEmail(user.getEmail());
             response.setName(user.getName());
             response.setUserType(user.getUserType());
+            response.setRole(user.getRole());
             response.setProfilePicture(user.getProfilePicture());
             response.setNewUser(isNewUser);
 
-            log.info("✅ Returning userId: {}", user.getId());
-
+            log.info("✅ Google authentication successful for: {}", email);
             return response;
 
         } catch (Exception e) {

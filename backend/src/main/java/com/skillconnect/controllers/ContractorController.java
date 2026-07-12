@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,6 +22,7 @@ public class ContractorController {
 
     private final ContractorService contractorService;
 
+    // ============ GET PROFILE ============
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(@RequestParam String userId) {
         try {
@@ -50,7 +53,7 @@ public class ContractorController {
         }
     }
 
-    // ============ NEW ENDPOINT 1: Save stage data progressively ============
+    // ============ SAVE STAGE DATA ============
     @PostMapping("/register/stage")
     public ResponseEntity<?> saveStageData(@RequestBody Map<String, Object> stageData) {
         try {
@@ -89,7 +92,7 @@ public class ContractorController {
         }
     }
 
-    // ============ NEW ENDPOINT 2: Get registration stage to resume ============
+    // ============ GET REGISTRATION STAGE ============
     @GetMapping("/profile/stage")
     public ResponseEntity<?> getRegistrationStage(@RequestParam String userId) {
         try {
@@ -125,6 +128,7 @@ public class ContractorController {
         }
     }
 
+    // ============ COMPLETE REGISTRATION ============
     @PostMapping("/register/complete")
     public ResponseEntity<?> completeRegistration(@RequestBody Map<String, Object> allData) {
         try {
@@ -151,6 +155,109 @@ public class ContractorController {
             Map<String, String> response = new HashMap<>();
             response.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // ============ GET FULL PROFILE ============
+    @GetMapping("/profile/full/{contractorId}")
+    public ResponseEntity<?> getFullProfile(@PathVariable String contractorId) {
+        try {
+            log.info("📄 Fetching full profile for contractor: {}", contractorId);
+            Map<String, Object> profile = contractorService.getContractorFullProfile(contractorId);
+            return ResponseEntity.ok(profile);
+        } catch (Exception e) {
+            log.error("Error fetching full profile: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ============ FOLLOW CONTRACTOR ============
+    @PostMapping("/follow/{contractorUserId}")
+    public ResponseEntity<?> followContractor(@PathVariable String contractorUserId, HttpSession session) {
+        try {
+            String userId = (String) session.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "User not logged in"));
+            }
+
+            if (userId.equals(contractorUserId)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "You cannot follow yourself"));
+            }
+
+            Contractor contractor = contractorService.followContractor(userId, contractorUserId);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Followed successfully",
+                    "followersCount", contractor.getFollowersCount()
+            ));
+        } catch (Exception e) {
+            log.error("Error following contractor: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ============ UNFOLLOW CONTRACTOR ============
+    @PostMapping("/unfollow/{contractorUserId}")
+    public ResponseEntity<?> unfollowContractor(@PathVariable String contractorUserId, HttpSession session) {
+        try {
+            String userId = (String) session.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "User not logged in"));
+            }
+
+            Contractor contractor = contractorService.unfollowContractor(userId, contractorUserId);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Unfollowed successfully",
+                    "followersCount", contractor.getFollowersCount()
+            ));
+        } catch (Exception e) {
+            log.error("Error unfollowing contractor: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ============ CHECK IF FOLLOWING ============
+    @GetMapping("/is-following/{contractorUserId}")
+    public ResponseEntity<?> isFollowing(@PathVariable String contractorUserId, HttpSession session) {
+        try {
+            String userId = (String) session.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "User not logged in"));
+            }
+
+            boolean isFollowing = contractorService.isFollowing(userId, contractorUserId);
+            return ResponseEntity.ok(Map.of("isFollowing", isFollowing));
+        } catch (Exception e) {
+            log.error("Error checking follow status: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ============ RECOMMENDED CONTRACTORS ============
+    @GetMapping("/recommended")
+    public ResponseEntity<?> getRecommendedContractors(HttpSession session) {
+        try {
+            String userId = (String) session.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "User not logged in"));
+            }
+
+            List<Contractor> recommended = contractorService.getRecommendedContractors(userId);
+            return ResponseEntity.ok(recommended);
+        } catch (Exception e) {
+            log.error("Error getting recommended contractors: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 }

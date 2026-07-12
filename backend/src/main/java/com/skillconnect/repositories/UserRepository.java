@@ -11,9 +11,14 @@ public interface UserRepository extends MongoRepository<User, String> {
 
     Optional<User> findByEmail(String email);
 
-    Optional<User> findByPhone(String phone);
+    // ✅ FIXED: Changed from findByPhone to findByPhoneNumber
+    Optional<User> findByPhoneNumber(String phoneNumber);
+
+    Optional<User> findByEmailAndPassword(String email, String password);
 
     boolean existsByEmail(String email);
 
-    boolean existsByPhone(String phone);
+    boolean existsByPhoneNumber(String phoneNumber);
+
+    void deleteByEmail(String email);
 }

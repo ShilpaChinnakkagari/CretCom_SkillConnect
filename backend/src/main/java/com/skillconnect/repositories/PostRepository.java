@@ -9,13 +9,13 @@ import java.util.List;
 @Repository
 public interface PostRepository extends MongoRepository<Post, String> {
 
-    List<Post> findByContractorIdAndIsActiveTrue(String contractorId);
+    List<Post> findByContractorIdAndActiveTrue(String contractorId);
 
-    List<Post> findByContractorIdInAndIsActiveTrueOrderByCreatedAtDesc(List<String> contractorIds);
+    List<Post> findByContractorIdInAndActiveTrueOrderByCreatedAtDesc(List<String> contractorIds);
 
-    List<Post> findByIsActiveTrueOrderByCreatedAtDesc();
+    List<Post> findByActiveTrueOrderByCreatedAtDesc();
 
-    long countByContractorIdAndIsActiveTrue(String contractorId);
+    long countByContractorIdAndActiveTrue(String contractorId);
 
     void deleteByContractorId(String contractorId);
 }

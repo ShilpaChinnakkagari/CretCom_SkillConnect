@@ -18,7 +18,14 @@ public class Post {
     private String id;
 
     private String contractorId;
-    private String type; // PROJECT_SHOWCASE, ACHIEVEMENT, EDUCATIONAL, OFFER
+
+    // ===== CONTRACTOR DETAILS (for display purposes) =====
+    private String contractorName;
+    private String contractorProfilePhoto;
+    private Boolean isVerified = false;
+
+    // Post Types: PROJECT_SHOWCASE, ACHIEVEMENT, EDUCATIONAL, OFFER
+    private String type;
 
     private String title;
     private String description;
@@ -28,11 +35,13 @@ public class Post {
     private String category;
     private Double budget;
 
+    // Engagement
     private int likes = 0;
     private List<Comment> comments = new ArrayList<>();
     private int views = 0;
 
-    private boolean isActive = true;
+    // ✅ CORRECT: Field name is "active"
+    private boolean active = true;
 
     @CreatedDate
     private LocalDateTime createdAt;
@@ -40,9 +49,12 @@ public class Post {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    // ============ GETTERS & SETTERS ============
+    // ===== GETTERS & SETTERS =====
     public String getId() { return id; }
     public String getContractorId() { return contractorId; }
+    public String getContractorName() { return contractorName; }
+    public String getContractorProfilePhoto() { return contractorProfilePhoto; }
+    public Boolean getIsVerified() { return isVerified; }
     public String getType() { return type; }
     public String getTitle() { return title; }
     public String getDescription() { return description; }
@@ -54,12 +66,18 @@ public class Post {
     public int getLikes() { return likes; }
     public List<Comment> getComments() { return comments; }
     public int getViews() { return views; }
-    public boolean isActive() { return isActive; }
+    
+    // ✅ CORRECT: Returns the "active" field
+    public boolean isActive() { return active; }
+    
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 
     public void setId(String id) { this.id = id; }
     public void setContractorId(String contractorId) { this.contractorId = contractorId; }
+    public void setContractorName(String contractorName) { this.contractorName = contractorName; }
+    public void setContractorProfilePhoto(String contractorProfilePhoto) { this.contractorProfilePhoto = contractorProfilePhoto; }
+    public void setIsVerified(Boolean isVerified) { this.isVerified = isVerified; }
     public void setType(String type) { this.type = type; }
     public void setTitle(String title) { this.title = title; }
     public void setDescription(String description) { this.description = description; }
@@ -71,10 +89,14 @@ public class Post {
     public void setLikes(int likes) { this.likes = likes; }
     public void setComments(List<Comment> comments) { this.comments = comments; }
     public void setViews(int views) { this.views = views; }
-    public void setActive(boolean active) { isActive = active; }
+    
+    // ✅ CORRECT: Sets the "active" field
+    public void setActive(boolean active) { this.active = active; }
+    
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
+    // ===== INNER CLASS: Comment =====
     @Data
     public static class Comment {
         private String userId;

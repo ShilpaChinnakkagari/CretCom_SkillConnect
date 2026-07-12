@@ -35,13 +35,20 @@ public class PostService {
         }
 
         post.setContractorId(userId);
+        post.setContractorName(user.getName());
+        post.setContractorProfilePhoto(user.getProfilePicture());
+        post.setIsVerified(false);
         post.setCreatedAt(LocalDateTime.now());
         post.setUpdatedAt(LocalDateTime.now());
         post.setActive(true);
 
+        Contractor contractor = contractorRepository.findByUserId(userId).orElse(null);
+        if (contractor != null) {
+            post.setIsVerified(contractor.getIsVerified() != null && contractor.getIsVerified());
+        }
+
         Post savedPost = postRepository.save(post);
 
-        Contractor contractor = contractorRepository.findByUserId(userId).orElse(null);
         if (contractor != null) {
             contractor.setTotalPosts(contractor.getTotalPosts() + 1);
             contractorRepository.save(contractor);
@@ -51,35 +58,72 @@ public class PostService {
         return savedPost;
     }
 
+    // ===== ENRICH POSTS WITH CONTRACTOR DETAILS =====
+    private List<Post> enrichPostsWithContractorDetails(List<Post> posts) {
+        if (posts == null || posts.isEmpty()) return posts;
+
+        for (Post post : posts) {
+            if (post.getContractorId() != null) {
+                Contractor contractor = contractorRepository.findByUserId(post.getContractorId()).orElse(null);
+                User user = userRepository.findById(post.getContractorId()).orElse(null);
+                
+                if (contractor != null) {
+                    post.setContractorName(contractor.getFullName() != null ? contractor.getFullName() : "Unknown");
+                    post.setContractorProfilePhoto(contractor.getProfilePhoto());
+                    post.setIsVerified(contractor.getIsVerified() != null && contractor.getIsVerified());
+                } else if (user != null) {
+                    post.setContractorName(user.getName() != null ? user.getName() : "Unknown");
+                    post.setContractorProfilePhoto(user.getProfilePicture());
+                    post.setIsVerified(false);
+                } else {
+                    post.setContractorName("Unknown");
+                    post.setContractorProfilePhoto(null);
+                    post.setIsVerified(false);
+                }
+            }
+        }
+        return posts;
+    }
+
     // ===== GET POSTS BY CONTRACTOR =====
     public List<Post> getPostsByContractor(String contractorId) {
         log.info("📄 Fetching posts for contractor: {}", contractorId);
-        return postRepository.findByContractorIdAndIsActiveTrue(contractorId);
+        List<Post> posts = postRepository.findByContractorIdAndActiveTrue(contractorId);
+        return enrichPostsWithContractorDetails(posts);
     }
 
-    // ===== GET FEED POSTS =====
+    // ===== GET FEED POSTS - FIXED: Shows ALL active posts =====
     public List<Post> getFeedPosts(String userId) {
         log.info("📰 Fetching feed for user: {}", userId);
-
-        Contractor contractor = contractorRepository.findByUserId(userId).orElse(null);
-
-        List<String> followingIds = new ArrayList<>();
-        if (contractor != null && contractor.getFollowing() != null) {
-            followingIds = contractor.getFollowing();
-        }
-
-        if (followingIds.isEmpty()) {
-            return postRepository.findByIsActiveTrueOrderByCreatedAtDesc();
-        }
-
-        return postRepository.findByContractorIdInAndIsActiveTrueOrderByCreatedAtDesc(followingIds);
+        
+        // ✅ FIXED: Show ALL active posts regardless of following
+        List<Post> posts = postRepository.findByActiveTrueOrderByCreatedAtDesc();
+        
+        return enrichPostsWithContractorDetails(posts);
     }
 
     // ===== GET SINGLE POST =====
     public Post getPostById(String postId) {
         log.info("📄 Fetching post: {}", postId);
-        return postRepository.findById(postId)
+        Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        if (post.getContractorId() != null) {
+            Contractor contractor = contractorRepository.findByUserId(post.getContractorId()).orElse(null);
+            User user = userRepository.findById(post.getContractorId()).orElse(null);
+            
+            if (contractor != null) {
+                post.setContractorName(contractor.getFullName() != null ? contractor.getFullName() : "Unknown");
+                post.setContractorProfilePhoto(contractor.getProfilePhoto());
+                post.setIsVerified(contractor.getIsVerified() != null && contractor.getIsVerified());
+            } else if (user != null) {
+                post.setContractorName(user.getName() != null ? user.getName() : "Unknown");
+                post.setContractorProfilePhoto(user.getProfilePicture());
+                post.setIsVerified(false);
+            }
+        }
+        
+        return post;
     }
 
     // ===== UPDATE POST =====
@@ -93,7 +137,6 @@ public class PostService {
             throw new RuntimeException("You can only edit your own posts");
         }
 
-        // Update fields
         if (updatedPost.getTitle() != null) existingPost.setTitle(updatedPost.getTitle());
         if (updatedPost.getDescription() != null) existingPost.setDescription(updatedPost.getDescription());
         if (updatedPost.getType() != null) existingPost.setType(updatedPost.getType());

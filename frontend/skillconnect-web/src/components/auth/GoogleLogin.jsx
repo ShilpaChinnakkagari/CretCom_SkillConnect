@@ -23,10 +23,10 @@ const GoogleLogin = ({ onSuccess, onError, buttonText = "Sign in with Google" })
 
       console.log('Got ID token, sending to backend...');
 
-      // Send to backend
-      const response = await axios.post('http://localhost:8080/api/auth/google', {
+      // ✅ FIXED: Correct URL - removed /api/
+      const response = await axios.post('http://localhost:8080/auth/google', {
         idToken: idToken,
-        userType: 'CUSTOMER'
+        userType: ''  // ✅ Send empty - let backend determine
       }, {
         withCredentials: true
       });

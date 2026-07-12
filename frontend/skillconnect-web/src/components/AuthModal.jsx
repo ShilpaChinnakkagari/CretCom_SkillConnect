@@ -129,7 +129,7 @@ const AuthModal = ({ isOpen, onClose }) => {
 
       const response = await axios.post('http://localhost:8080/auth/google', {
         idToken: idToken,
-        userType: 'USER'
+        userType: ''
       }, {
         withCredentials: true
       });

@@ -442,6 +442,7 @@ public class ContractorService {
         return contractorRepository.findTop10ByOrderByAverageRatingDesc();
     }
 
+    // ============ GET CONTRACTOR FULL PROFILE ============
     public Map<String, Object> getContractorFullProfile(String contractorUserId) {
         log.info("📄 Fetching full profile for contractor: {}", contractorUserId);
 
@@ -451,7 +452,7 @@ public class ContractorService {
         User user = userRepository.findById(contractorUserId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<Post> posts = postRepository.findByContractorIdAndIsActiveTrue(contractorUserId);
+        List<Post> posts = postRepository.findByContractorIdAndActiveTrue(contractorUserId);
         List<Story> stories = storyRepository.findByContractorIdAndIsActiveTrueAndExpiresAtAfter(
                 contractorUserId, LocalDateTime.now()
         );

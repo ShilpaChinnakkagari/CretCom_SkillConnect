@@ -23,7 +23,7 @@ public class GoogleAuthService {
         log.info("🔐 Authenticating with Google");
 
         try {
-            String idToken = request.getIdToken();  // ✅ FIXED: getIdToken()
+            String idToken = request.getIdToken();
             
             FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
             String email = decodedToken.getEmail();
@@ -32,12 +32,11 @@ public class GoogleAuthService {
 
             log.info("✅ Google user verified: {}", email);
 
-            // Check if user exists
             User user = userRepository.findByEmail(email).orElse(null);
             boolean isNewUser = false;
 
             if (user == null) {
-                // Create new user
+                // ✅ NEW USER - NO ROLE YET
                 user = new User();
                 user.setEmail(email);
                 user.setName(name);
@@ -47,13 +46,13 @@ public class GoogleAuthService {
                 user.setIsActive(true);
                 user.setCreatedAt(LocalDateTime.now());
                 user.setUpdatedAt(LocalDateTime.now());
-                user.setUserType(request.getUserType() != null ? request.getUserType() : "CUSTOMER");
-                user.setRole(request.getUserType() != null ? request.getUserType() : "CUSTOMER");
+                user.setUserType(null);  // ← NO ROLE
+                user.setRole(null);      // ← NO ROLE
                 userRepository.save(user);
                 isNewUser = true;
                 log.info("✅ New user created via Google: {}", email);
             } else {
-                // Update existing user
+                // ✅ EXISTING USER - KEEP THEIR ROLE
                 user.setName(name);
                 user.setProfilePicture(picture);
                 user.setUpdatedAt(LocalDateTime.now());
@@ -62,13 +61,13 @@ public class GoogleAuthService {
                 log.info("✅ User updated via Google: {}", email);
             }
 
-            // Build response
+            // ✅ Build response with userType (may be null)
             AuthResponse response = new AuthResponse();
             response.setUserId(user.getId());
             response.setEmail(user.getEmail());
             response.setName(user.getName());
-            response.setUserType(user.getUserType());
-            response.setRole(user.getRole());
+            response.setUserType(user.getUserType());  // ← May be null
+            response.setRole(user.getRole());          // ← May be null
             response.setProfilePicture(user.getProfilePicture());
             response.setNewUser(isNewUser);
 

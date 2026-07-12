@@ -12,7 +12,6 @@ const RoleSelection = () => {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
 
-  // ===== STARS WITH SHINING EFFECT =====
   const stars = Array.from({ length: 200 }, (_, i) => ({
     id: i,
     size: Math.random() * 3 + 0.5,
@@ -21,18 +20,19 @@ const RoleSelection = () => {
     duration: 3 + Math.random() * 5,
     delay: Math.random() * 6,
     opacity: 0.3 + Math.random() * 0.7,
-    // Some stars are "shining" (bright with glow)
     isShining: Math.random() > 0.6,
     shineDuration: 3 + Math.random() * 4,
     shineDelay: Math.random() * 5,
   }));
 
+  // ===== ✅ FIXED: Don't redirect if userType is null =====
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const parsed = JSON.parse(userStr);
       setUser(parsed);
 
+      // ✅ Only redirect if userType is already set (existing user)
       if (parsed.userType && parsed.userType !== '' && parsed.userType !== null && parsed.userType !== 'null') {
         if (parsed.userType === 'CONTRACTOR') {
           navigate('/contractor-dashboard', { replace: true });
@@ -42,6 +42,7 @@ const RoleSelection = () => {
           navigate('/customer-dashboard', { replace: true });
         }
       }
+      // ✅ If userType is null/empty, STAY on RoleSelection page
     } else {
       navigate('/login');
     }
@@ -96,7 +97,7 @@ const RoleSelection = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0a0a12] px-4 relative overflow-hidden">
 
-      {/* ===== BACKGROUND STARS WITH SHINING EFFECT ===== */}
+      {/* ===== BACKGROUND STARS ===== */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         {stars.map((star) => (
           <div
@@ -171,7 +172,6 @@ const RoleSelection = () => {
               boxShadow: '0 8px 40px rgba(0,0,0,0.3), inset 0 0 60px rgba(255,255,255,0.02)',
             }}
           >
-            {/* Glow effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-pink-500/0 via-orange-500/10 to-yellow-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
             <div className="absolute -inset-1 bg-gradient-to-r from-pink-500/20 via-orange-500/20 to-yellow-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
             
@@ -226,7 +226,6 @@ const RoleSelection = () => {
               boxShadow: '0 8px 40px rgba(0,0,0,0.3), inset 0 0 60px rgba(255,255,255,0.02)',
             }}
           >
-            {/* Glow effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-violet-500/10 to-cyan-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-violet-500/20 to-cyan-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
             
@@ -282,32 +281,15 @@ const RoleSelection = () => {
         </div>
       </div>
 
-      {/* ===== LANGUAGE SWITCHER ===== */}
       <LanguageSwitcher />
 
       <style>{`
-        /* ===== FLOATING STARS ===== */
         @keyframes starFloat {
-          0% {
-            transform: translate(0, 0) scale(1);
-            opacity: 0.3;
-          }
-          25% {
-            transform: translate(10px, -20px) scale(1.2);
-            opacity: 0.8;
-          }
-          50% {
-            transform: translate(-5px, 10px) scale(0.8);
-            opacity: 0.5;
-          }
-          75% {
-            transform: translate(15px, 5px) scale(1.1);
-            opacity: 0.9;
-          }
-          100% {
-            transform: translate(0, 0) scale(1);
-            opacity: 0.3;
-          }
+          0% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+          25% { transform: translate(10px, -20px) scale(1.2); opacity: 0.8; }
+          50% { transform: translate(-5px, 10px) scale(0.8); opacity: 0.5; }
+          75% { transform: translate(15px, 5px) scale(1.1); opacity: 0.9; }
+          100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
         }
         .star-float {
           animation: starFloat var(--duration) ease-in-out infinite;
@@ -315,55 +297,16 @@ const RoleSelection = () => {
           will-change: transform, opacity;
         }
 
-        /* ===== SHINING STARS (Twinkling) ===== */
         @keyframes starShine {
-          0% {
-            transform: scale(1) rotate(0deg);
-            opacity: 0.3;
-          }
-          25% {
-            transform: scale(1.8) rotate(45deg);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(0.7) rotate(90deg);
-            opacity: 0.5;
-          }
-          75% {
-            transform: scale(2) rotate(135deg);
-            opacity: 0.9;
-          }
-          100% {
-            transform: scale(1) rotate(180deg);
-            opacity: 0.3;
-          }
+          0% { transform: scale(1) rotate(0deg); opacity: 0.3; }
+          25% { transform: scale(1.8) rotate(45deg); opacity: 1; }
+          50% { transform: scale(0.7) rotate(90deg); opacity: 0.5; }
+          75% { transform: scale(2) rotate(135deg); opacity: 0.9; }
+          100% { transform: scale(1) rotate(180deg); opacity: 0.3; }
         }
         .star-shining {
           animation: starShine var(--shine-duration) ease-in-out infinite;
           animation-delay: var(--shine-delay);
-          will-change: transform, opacity;
-        }
-
-        /* ===== STAR SHOOTING (Occasional shooting stars) ===== */
-        @keyframes starShoot {
-          0% {
-            transform: translate(0, 0) scale(1);
-            opacity: 0;
-          }
-          5% {
-            opacity: 1;
-          }
-          15% {
-            transform: translate(-200px, 200px) scale(0.5);
-            opacity: 0;
-          }
-          100% {
-            opacity: 0;
-          }
-        }
-        .star-shooting {
-          animation: starShoot 6s ease-in-out infinite;
-          animation-delay: var(--delay);
           will-change: transform, opacity;
         }
       `}</style>

@@ -12,8 +12,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,27 +36,35 @@ public class StoryService {
             throw new RuntimeException("Only contractors can create stories");
         }
 
+        Contractor contractor = contractorRepository.findByUserId(userId).orElse(null);
+
         story.setContractorId(userId);
-        story.setCreatedAt(LocalDateTime.now());
-        story.setExpiresAt(LocalDateTime.now().plusHours(24));
+        story.setContractorName(contractor != null ? contractor.getFullName() : user.getName());
+        story.setContractorProfilePhoto(contractor != null ? contractor.getProfilePhoto() : user.getProfilePicture());
+        
+        // ✅ FIX: Use UTC for consistent time
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        story.setCreatedAt(now);
+        story.setExpiresAt(now.plusHours(24));
         story.setActive(true);
 
         Story savedStory = storyRepository.save(story);
 
-        Contractor contractor = contractorRepository.findByUserId(userId).orElse(null);
         if (contractor != null) {
             contractor.setTotalStories(contractor.getTotalStories() + 1);
             contractorRepository.save(contractor);
         }
 
-        log.info("✅ Story created with id: {}", savedStory.getId());
+        log.info("✅ Story created with id: {}, expires at: {}", savedStory.getId(), savedStory.getExpiresAt());
         return savedStory;
     }
 
     public List<Story> getActiveStoriesByContractor(String contractorId) {
         log.info("📸 Fetching active stories for contractor: {}", contractorId);
+        
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return storyRepository.findByContractorIdAndIsActiveTrueAndExpiresAtAfter(
-                contractorId, LocalDateTime.now()
+                contractorId, now
         );
     }
 
@@ -68,13 +78,42 @@ public class StoryService {
             followingIds = contractor.getFollowing();
         }
 
-        if (followingIds.isEmpty()) {
-            return storyRepository.findByIsActiveTrueAndExpiresAtAfterOrderByCreatedAtDesc(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+
+        // ✅ FIX: Include the user's own stories in the feed
+        List<Story> allStories = new ArrayList<>();
+
+        // 1. Get user's own active stories
+        List<Story> ownStories = storyRepository.findByContractorIdAndIsActiveTrueAndExpiresAtAfter(
+                userId, now
+        );
+        allStories.addAll(ownStories);
+
+        // 2. Get stories from followed contractors
+        if (!followingIds.isEmpty()) {
+            List<Story> followedStories = storyRepository.findByContractorIdInAndIsActiveTrueAndExpiresAtAfterOrderByCreatedAtDesc(
+                    followingIds, now
+            );
+            allStories.addAll(followedStories);
+        } else {
+            // 3. If not following anyone, get all other active stories (exclude own to avoid duplicates)
+            List<Story> otherStories = storyRepository.findByIsActiveTrueAndExpiresAtAfterOrderByCreatedAtDesc(now);
+            otherStories = otherStories.stream()
+                    .filter(story -> !story.getContractorId().equals(userId))
+                    .collect(Collectors.toList());
+            allStories.addAll(otherStories);
         }
 
-        return storyRepository.findByContractorIdInAndIsActiveTrueAndExpiresAtAfterOrderByCreatedAtDesc(
-                followingIds, LocalDateTime.now()
-        );
+        // ✅ Remove duplicates and sort by createdAt descending
+        List<Story> uniqueStories = allStories.stream()
+                .distinct()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .collect(Collectors.toList());
+
+        log.info("📰 Feed stories count: {} (own: {}, followed: {})", 
+                uniqueStories.size(), ownStories.size(), followingIds.size());
+        
+        return uniqueStories;
     }
 
     public Story getStoryById(String storyId) {
@@ -115,10 +154,22 @@ public class StoryService {
         log.info("✅ Story deleted successfully");
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 * * * * *") // ✅ Run every minute for testing, change to hourly for production
     public void deleteExpiredStories() {
         log.info("🗑️ Running scheduled job: Deleting expired stories...");
-        storyRepository.deleteByExpiresAtBefore(LocalDateTime.now());
-        log.info("✅ Expired stories deletion completed");
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        
+        // ✅ Also mark stories as inactive if expired
+        List<Story> expiredStories = storyRepository.findByExpiresAtBeforeAndIsActiveTrue(now);
+        for (Story story : expiredStories) {
+            story.setActive(false);
+            storyRepository.save(story);
+            log.info("⏰ Story expired and deactivated: {}", story.getId());
+        }
+        
+        // Delete permanently (optional - keep for analytics)
+        // storyRepository.deleteByExpiresAtBefore(now);
+        
+        log.info("✅ Expired stories processed: {}", expiredStories.size());
     }
 }

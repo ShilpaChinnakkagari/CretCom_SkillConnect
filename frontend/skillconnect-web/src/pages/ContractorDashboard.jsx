@@ -10,6 +10,7 @@ import RightSidebar from '../components/contractor/RightSidebar';
 import MobileNav from '../components/contractor/MobileNav';
 import FollowersModal from '../components/contractor/FollowersModal';
 import CreatePost from '../components/contractor/CreatePost';
+import CreateStory from '../components/contractor/CreateStory';
 import StoryViewer from '../components/StoryViewer';
 import Bookings from '../components/contractor/Bookings';
 import Analytics from '../components/contractor/Analytics';
@@ -28,9 +29,9 @@ const ContractorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   
-  // ===== DATA STATES =====
   const [posts, setPosts] = useState([]);
-  const [stories, setStories] = useState([]);
+  const [feedStories, setFeedStories] = useState([]);
+  const [ownStories, setOwnStories] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
@@ -38,35 +39,48 @@ const ContractorDashboard = () => {
   const [allContractors, setAllContractors] = useState([]);
   const [filteredContractors, setFilteredContractors] = useState([]);
   
-  // ===== UI STATES =====
   const [activeTab, setActiveTab] = useState('home');
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
-  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+  const [isCreateStoryModalOpen, setIsCreateStoryModalOpen] = useState(false);
   const [showStoryViewer, setShowStoryViewer] = useState(false);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
-  // ===== PROFILE VIEWER STATES =====
   const [selectedContractorId, setSelectedContractorId] = useState(null);
   const [showProfileViewer, setShowProfileViewer] = useState(false);
   
-  // ===== REF TO PREVENT MULTIPLE FETCHES =====
+  // ✅ STATE FOR ALL STORIES COMBINED (for Story Viewer)
+  const [allStoriesForViewer, setAllStoriesForViewer] = useState([]);
+  
   const hasFetched = useRef(false);
 
-  // ===== GET CURRENT USER ID HELPER =====
+  // ===== GET CURRENT USER ID =====
   const getCurrentUserId = () => {
     const userStr = localStorage.getItem('user');
     if (!userStr) return null;
     try {
       const userData = JSON.parse(userStr);
-      return userData?.id || userData?.userId || null;
+      const id = userData?.id || userData?.userId || null;
+      return id;
     } catch {
       return null;
     }
   };
 
-  // ===== FETCH DATA =====
+  // ===== GET CURRENT USER =====
+  const getCurrentUser = () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  };
+
+  // ===== INITIAL LOAD =====
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (!userStr) {
@@ -91,6 +105,7 @@ const ContractorDashboard = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // ===== FETCH ALL DATA =====
   const fetchAllData = async () => {
     try {
       const userId = getCurrentUserId();
@@ -101,27 +116,46 @@ const ContractorDashboard = () => {
 
       console.log('🟢 Fetching data for userId:', userId);
 
-      // Profile
+      // 1. Get Profile
       const profileRes = await axios.get(`http://localhost:8080/contractor/profile`, {
         params: { userId: userId },
         withCredentials: true
       });
       setProfile(profileRes.data);
 
-      // Posts
+      // 2. Get Posts
       const postsRes = await axios.get('http://localhost:8080/posts/feed', {
         withCredentials: true
       });
       console.log('📰 Feed posts received:', postsRes.data?.length || 0);
       setPosts(postsRes.data || []);
 
-      // Stories
+      // 3. Get Feed Stories (includes own stories now)
       const storiesRes = await axios.get('http://localhost:8080/stories/feed', {
         withCredentials: true
       });
-      setStories(storiesRes.data || []);
+      console.log('📸 Feed stories received:', storiesRes.data?.length || 0);
+      setFeedStories(storiesRes.data || []);
 
-      // Bookings
+      // 4. Get Own Stories (for Stories tab)
+      try {
+        const ownStoriesRes = await axios.get(`http://localhost:8080/stories/contractor/${userId}`, {
+          withCredentials: true
+        });
+        console.log('📸 Own stories raw response:', ownStoriesRes.data);
+        
+        let storiesData = ownStoriesRes.data || [];
+        if (!Array.isArray(storiesData)) {
+          storiesData = [storiesData];
+        }
+        console.log('📸 Own stories as array:', storiesData);
+        setOwnStories(storiesData);
+      } catch (e) {
+        console.error('Error fetching own stories:', e);
+        setOwnStories([]);
+      }
+
+      // 5. Get Bookings
       try {
         const bookingsRes = await axios.get('http://localhost:8080/bookings/contractor', {
           withCredentials: true
@@ -136,33 +170,27 @@ const ContractorDashboard = () => {
         }
       }
 
-      // ===== FOLLOWERS - FIXED: Expecting array of user objects =====
+      // 6. Get Followers
       try {
         const followersRes = await axios.get(`http://localhost:8080/contractor/followers/${userId}`, {
           withCredentials: true
         });
-        console.log('👥 Followers data:', followersRes.data);
-        // ✅ Set followers as array (already objects from backend)
         setFollowers(Array.isArray(followersRes.data) ? followersRes.data : []);
       } catch (e) {
-        console.error('Error fetching followers:', e);
         setFollowers([]);
       }
 
-      // ===== FOLLOWING - FIXED: Expecting array of user objects =====
+      // 7. Get Following
       try {
         const followingRes = await axios.get(`http://localhost:8080/contractor/following/${userId}`, {
           withCredentials: true
         });
-        console.log('👤 Following data:', followingRes.data);
-        // ✅ Set following as array (already objects from backend)
         setFollowing(Array.isArray(followingRes.data) ? followingRes.data : []);
       } catch (e) {
-        console.error('Error fetching following:', e);
         setFollowing([]);
       }
 
-      // Recommended
+      // 8. Get Recommended
       try {
         const recommendedRes = await axios.get('http://localhost:8080/contractor/recommended', {
           withCredentials: true
@@ -172,16 +200,14 @@ const ContractorDashboard = () => {
         setRecommended([]);
       }
 
-      // All Contractors
+      // 9. Get All Contractors
       try {
         const contractorsRes = await axios.get('http://localhost:8080/contractor', {
           withCredentials: true
         });
-        console.log('📄 All contractors fetched:', contractorsRes.data?.length || 0);
         setAllContractors(contractorsRes.data || []);
         setFilteredContractors(contractorsRes.data || []);
       } catch (e) {
-        console.error('Error fetching contractors:', e);
         setAllContractors([]);
         setFilteredContractors([]);
       }
@@ -198,21 +224,31 @@ const ContractorDashboard = () => {
     }
   };
 
-  // ===== HANDLERS =====
+  // ===== REFRESH =====
   const handleRefresh = () => {
     fetchAllData();
     toast.success('Refreshed!');
   };
 
-  const handleViewStory = (index) => {
-    setSelectedStoryIndex(index);
+  // ===== VIEW STORY - Instagram Style =====
+  const handleViewStory = (storiesToShow) => {
+    if (!storiesToShow || storiesToShow.length === 0) {
+      toast.error('No stories to show');
+      return;
+    }
+    
+    const sortedStories = [...storiesToShow].sort((a, b) => 
+      new Date(b.createdAt) - new Date(a.createdAt)
+    );
+    
+    setAllStoriesForViewer(sortedStories);
+    setSelectedStoryIndex(0);
     setShowStoryViewer(true);
   };
 
+  // ===== FOLLOW / UNFOLLOW =====
   const handleFollowToggle = async (targetUserId, isFollowing) => {
     try {
-      console.log('Follow toggle called for:', targetUserId, 'Current state:', isFollowing);
-      
       if (isFollowing) {
         await axios.post(`http://localhost:8080/contractor/unfollow/${targetUserId}`, {}, {
           withCredentials: true
@@ -231,11 +267,13 @@ const ContractorDashboard = () => {
     }
   };
 
+  // ===== VIEW PROFILE =====
   const handleViewProfile = (contractorId) => {
     setSelectedContractorId(contractorId);
     setShowProfileViewer(true);
   };
 
+  // ===== LIKE POST =====
   const handleLike = async (postId) => {
     try {
       const response = await axios.post(`http://localhost:8080/posts/${postId}/like`, {}, {
@@ -251,6 +289,7 @@ const ContractorDashboard = () => {
     }
   };
 
+  // ===== COMMENT ON POST =====
   const handleComment = async (postId, text) => {
     try {
       const response = await axios.post(`http://localhost:8080/posts/${postId}/comment`, { text }, {
@@ -266,6 +305,7 @@ const ContractorDashboard = () => {
     }
   };
 
+  // ===== SAVE POST =====
   const handleSave = async (postId) => {
     try {
       toast.success('Post saved! (Coming soon)');
@@ -274,6 +314,7 @@ const ContractorDashboard = () => {
     }
   };
 
+  // ===== SHARE POST =====
   const handleShare = async (postId) => {
     try {
       const url = `${window.location.origin}/post/${postId}`;
@@ -285,11 +326,13 @@ const ContractorDashboard = () => {
     }
   };
 
+  // ===== POST DELETED =====
   const handlePostDeleted = (postId) => {
     setPosts(posts.filter(p => p.id !== postId));
     toast.success('Post removed');
   };
 
+  // ===== POST EDITED =====
   const handlePostEdited = (updatedPost) => {
     setPosts(posts.map(p => 
       p.id === updatedPost.id ? updatedPost : p
@@ -297,7 +340,33 @@ const ContractorDashboard = () => {
     toast.success('Post updated!');
   };
 
-  // ===== FILTER CONTRACTORS HANDLER =====
+  // ===== DELETE INDIVIDUAL STORY - FIXED =====
+  const handleStoryDelete = async (storyId) => {
+    try {
+      console.log('🗑️ Deleting individual story:', storyId);
+      
+      // ✅ Call API to delete
+      await axios.delete(`http://localhost:8080/stories/${storyId}`, {
+        withCredentials: true
+      });
+      
+      toast.success('Story deleted successfully');
+      
+      // ✅ Remove from ALL states
+      setOwnStories(prev => prev.filter(s => s.id !== storyId));
+      setFeedStories(prev => prev.filter(s => s.id !== storyId));
+      setAllStoriesForViewer(prev => prev.filter(s => s.id !== storyId));
+      
+      // ✅ Close viewer immediately
+      setShowStoryViewer(false);
+      
+    } catch (error) {
+      console.error('Error deleting story:', error);
+      toast.error(error.response?.data?.error || 'Failed to delete story');
+    }
+  };
+
+  // ===== FILTER CONTRACTORS =====
   const handleFilterContractors = (filtered) => {
     setFilteredContractors(filtered);
   };
@@ -305,17 +374,32 @@ const ContractorDashboard = () => {
   // ===== RENDER CONTENT =====
   const renderContent = () => {
     const currentUserId = getCurrentUserId();
+    const currentUser = getCurrentUser();
 
     switch (activeTab) {
       case 'home': {
+        // Combine own + feed stories
+        const allStories = [...ownStories, ...feedStories];
+        
+        // Remove duplicates by id
+        const uniqueStories = allStories.filter((story, index, self) => 
+          index === self.findIndex(s => s.id === story.id)
+        );
+        
+        // Sort by createdAt (newest first)
+        const sortedStories = uniqueStories.sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        
         return (
           <Feed 
             posts={posts}
-            stories={stories}
+            stories={sortedStories}
             profile={profile}
-            user={user}
+            user={currentUser}
             onViewStory={handleViewStory}
-            onCreatePost={() => setShowCreatePost(true)}
+            onCreatePost={() => setIsCreatePostModalOpen(true)}
+            onCreateStory={() => setIsCreateStoryModalOpen(true)}
             onRefresh={handleRefresh}
             onFollowToggle={handleFollowToggle}
             onLike={handleLike}
@@ -327,14 +411,19 @@ const ContractorDashboard = () => {
           />
         );
       }
+      
       case 'bookings':
         return <Bookings />;
+      
       case 'analytics':
         return <Analytics />;
+      
       case 'messages':
         return <Messages />;
+      
       case 'profile':
         return <Profile />;
+      
       case 'search': {
         return (
           <div className="space-y-4">
@@ -354,9 +443,7 @@ const ContractorDashboard = () => {
                 <div className="rounded-xl p-8 text-center" style={{ background: '#161B22', border: '1px solid #30363D' }}>
                   <p className="text-gray-400">No contractors found matching your criteria</p>
                   <button 
-                    onClick={() => {
-                      setFilteredContractors(allContractors);
-                    }}
+                    onClick={() => setFilteredContractors(allContractors)}
                     className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
                   >
                     Show All Contractors
@@ -418,6 +505,7 @@ const ContractorDashboard = () => {
           </div>
         );
       }
+      
       case 'posts': {
         const myPosts = posts.filter(p => p.contractorId === currentUserId);
         
@@ -426,7 +514,7 @@ const ContractorDashboard = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-white">📰 My Posts</h2>
               <button 
-                onClick={() => setShowCreatePost(true)}
+                onClick={() => setIsCreatePostModalOpen(true)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
               >
                 + Create Post
@@ -436,7 +524,7 @@ const ContractorDashboard = () => {
               <div className="rounded-xl p-8 text-center" style={{ background: '#161B22', border: '1px solid #30363D' }}>
                 <p className="text-gray-400">You haven't created any posts yet.</p>
                 <button 
-                  onClick={() => setShowCreatePost(true)}
+                  onClick={() => setIsCreatePostModalOpen(true)}
                   className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
                 >
                   Create Your First Post
@@ -460,71 +548,92 @@ const ContractorDashboard = () => {
           </div>
         );
       }
+      
       case 'stories': {
-        const currentUserId2 = getCurrentUserId();
-        const myStories = stories.filter(s => s.contractorId === currentUserId2);
+        const currentUserIdStories = getCurrentUserId();
+        
+        // ✅ Get ONLY the logged-in user's stories
+        const myStories = ownStories.filter(story => 
+          story.contractorId === currentUserIdStories
+        );
+        
+        // ✅ Sort by createdAt (newest first)
+        const sortedMyStories = myStories.sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-white">📸 My Stories</h2>
               <button 
-                onClick={() => setShowCreatePost(true)}
+                onClick={() => setIsCreateStoryModalOpen(true)}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm"
               >
                 + Add Story
               </button>
             </div>
-            {myStories.length === 0 ? (
+            
+            {sortedMyStories.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {sortedMyStories.map((story) => (
+                  <div 
+                    key={story.id} 
+                    className="rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition group relative"
+                    style={{ background: '#161B22', border: '1px solid #30363D' }}
+                  >
+                    {/* ===== STORY PREVIEW ===== */}
+                    <div 
+                      className="aspect-square bg-gradient-to-br from-purple-500 to-pink-500 p-0.5"
+                      onClick={() => {
+                        handleViewStory(sortedMyStories);
+                      }}
+                    >
+                      <div className="w-full h-full bg-[#161B22] overflow-hidden">
+                        {story.type === 'VIDEO' ? (
+                          <div className="w-full h-full bg-gray-900 flex items-center justify-center text-4xl text-white">▶️</div>
+                        ) : (
+                          <img 
+                            src={story.mediaUrl || 'https://via.placeholder.com/200'} 
+                            alt={story.caption || 'Story'} 
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* ===== STORY INFO ===== */}
+                    <div className="p-2">
+                      <p className="text-white text-sm truncate">{story.caption || 'Story'}</p>
+                      <p className="text-gray-500 text-xs">{new Date(story.createdAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-gray-600">
+                        ⏰ {Math.max(0, 24 - Math.floor((new Date() - new Date(story.createdAt)) / (1000 * 60 * 60)))} hours left
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
               <div className="rounded-xl p-8 text-center" style={{ background: '#161B22', border: '1px solid #30363D' }}>
                 <p className="text-gray-400">No stories yet</p>
                 <button 
-                  onClick={() => setShowCreatePost(true)}
+                  onClick={() => setIsCreateStoryModalOpen(true)}
                   className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm"
                 >
                   Add Your First Story
                 </button>
               </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {myStories.map((story, index) => {
-                  const storyIndex = stories.indexOf(story);
-                  return (
-                    <div 
-                      key={story.id} 
-                      className="rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition"
-                      style={{ background: '#161B22', border: '1px solid #30363D' }}
-                      onClick={() => handleViewStory(storyIndex >= 0 ? storyIndex : 0)}
-                    >
-                      <div className="aspect-square bg-gradient-to-br from-purple-500 to-pink-500 p-0.5">
-                        <div className="w-full h-full bg-[#161B22] overflow-hidden">
-                          {story.type === 'VIDEO' ? (
-                            <div className="w-full h-full bg-gray-900 flex items-center justify-center text-4xl text-white">▶️</div>
-                          ) : (
-                            <img 
-                              src={story.mediaUrl || 'https://via.placeholder.com/200'} 
-                              alt={story.caption || 'Story'} 
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <div className="p-2">
-                        <p className="text-white text-sm truncate">{story.caption || 'Story'}</p>
-                        <p className="text-gray-500 text-xs">{new Date(story.createdAt).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             )}
           </div>
         );
       }
+      
       default:
         return null;
     }
   };
 
+  // ===== LOADING STATE =====
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D1117' }}>
@@ -537,13 +646,14 @@ const ContractorDashboard = () => {
     );
   }
 
+  // ===== RENDER =====
   return (
     <div className="min-h-screen pb-20 md:pb-0" style={{ background: '#0D1117' }}>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex gap-6">
           
-          {/* ===== LEFT SIDEBAR ===== */}
+          {/* ===== SIDEBAR ===== */}
           <div className="hidden lg:block w-64 flex-shrink-0">
             <Sidebar 
               user={user}
@@ -558,7 +668,7 @@ const ContractorDashboard = () => {
             />
           </div>
 
-          {/* ===== CENTER CONTENT ===== */}
+          {/* ===== MAIN CONTENT ===== */}
           <div className="flex-1 min-w-0">
             {renderContent()}
           </div>
@@ -578,14 +688,14 @@ const ContractorDashboard = () => {
         </div>
       </div>
 
-      {/* ===== BOTTOM NAVIGATION (Mobile) ===== */}
+      {/* ===== MOBILE NAV ===== */}
       <MobileNav 
         activeTab={activeTab} 
         onTabChange={setActiveTab}
-        onCreatePost={() => setShowCreatePost(true)}
+        onCreatePost={() => setIsCreatePostModalOpen(true)}
       />
 
-      {/* ===== MODALS ===== */}
+      {/* ===== FOLLOWERS MODAL ===== */}
       {showFollowersModal && (
         <FollowersModal 
           type="followers"
@@ -595,6 +705,7 @@ const ContractorDashboard = () => {
         />
       )}
 
+      {/* ===== FOLLOWING MODAL ===== */}
       {showFollowingModal && (
         <FollowersModal 
           type="following"
@@ -604,25 +715,43 @@ const ContractorDashboard = () => {
         />
       )}
 
-      {showCreatePost && (
+      {/* ===== CREATE POST MODAL ===== */}
+      {isCreatePostModalOpen && (
         <CreatePost 
-          onClose={() => setShowCreatePost(false)}
+          onClose={() => setIsCreatePostModalOpen(false)}
           onPostCreated={() => {
-            setShowCreatePost(false);
+            setIsCreatePostModalOpen(false);
             fetchAllData();
           }}
         />
       )}
 
-      {showStoryViewer && stories.length > 0 && (
-        <StoryViewer 
-          stories={stories}
-          initialIndex={selectedStoryIndex}
-          onClose={() => setShowStoryViewer(false)}
+      {/* ===== CREATE STORY MODAL ===== */}
+      {isCreateStoryModalOpen && (
+        <CreateStory 
+          onClose={() => setIsCreateStoryModalOpen(false)}
+          onStoryCreated={() => {
+            setIsCreateStoryModalOpen(false);
+            fetchAllData();
+          }}
         />
       )}
 
-      {/* ===== PROFILE VIEWER MODAL ===== */}
+      {/* ===== STORY VIEWER WITH DELETE INSIDE ===== */}
+      {showStoryViewer && (
+        <StoryViewer 
+          stories={allStoriesForViewer}
+          initialIndex={selectedStoryIndex}
+          onClose={() => setShowStoryViewer(false)}
+          onStoryEnd={() => {
+            setShowStoryViewer(false);
+          }}
+          onDeleteStory={handleStoryDelete}
+          currentUserId={getCurrentUserId()}
+        />
+      )}
+
+      {/* ===== PROFILE VIEWER ===== */}
       {showProfileViewer && selectedContractorId && (
         <ContractorProfileViewer
           contractorId={selectedContractorId}
@@ -632,6 +761,7 @@ const ContractorDashboard = () => {
         />
       )}
 
+      {/* ===== LANGUAGE SWITCHER ===== */}
       <LanguageSwitcher />
     </div>
   );

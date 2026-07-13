@@ -30,7 +30,9 @@ public class StoryController {
                         .body(Map.of("error", "User not logged in"));
             }
 
+            log.info("📸 Creating story for user: {}", userId);
             Story createdStory = storyService.createStory(userId, story);
+            log.info("✅ Story created: {}", createdStory.getId());
             return ResponseEntity.ok(createdStory);
         } catch (Exception e) {
             log.error("Error creating story: {}", e.getMessage(), e);
@@ -42,7 +44,9 @@ public class StoryController {
     @GetMapping("/contractor/{contractorId}")
     public ResponseEntity<?> getStoriesByContractor(@PathVariable String contractorId) {
         try {
+            log.info("📸 Fetching stories for contractor: {}", contractorId);
             List<Story> stories = storyService.getActiveStoriesByContractor(contractorId);
+            log.info("📸 Found {} stories for contractor {}", stories.size(), contractorId);
             return ResponseEntity.ok(stories);
         } catch (Exception e) {
             log.error("Error fetching stories: {}", e.getMessage(), e);
@@ -61,6 +65,7 @@ public class StoryController {
             }
 
             List<Story> stories = storyService.getFeedStories(userId);
+            log.info("📰 Feed stories: {}", stories.size());
             return ResponseEntity.ok(stories);
         } catch (Exception e) {
             log.error("Error fetching story feed: {}", e.getMessage(), e);

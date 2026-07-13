@@ -10,15 +10,23 @@ import java.util.List;
 @Repository
 public interface StoryRepository extends MongoRepository<Story, String> {
 
-    List<Story> findByContractorIdAndIsActiveTrueAndExpiresAtAfter(String contractorId, LocalDateTime now);
+    List<Story> findByContractorIdAndIsActiveTrueAndExpiresAtAfter(
+            String contractorId, 
+            LocalDateTime now
+    );
 
-    List<Story> findByContractorIdInAndIsActiveTrueAndExpiresAtAfterOrderByCreatedAtDesc(List<String> contractorIds, LocalDateTime now);
+    List<Story> findByContractorIdInAndIsActiveTrueAndExpiresAtAfterOrderByCreatedAtDesc(
+            List<String> contractorIds, 
+            LocalDateTime now
+    );
 
-    List<Story> findByIsActiveTrueAndExpiresAtAfterOrderByCreatedAtDesc(LocalDateTime now);
+    List<Story> findByIsActiveTrueAndExpiresAtAfterOrderByCreatedAtDesc(
+            LocalDateTime now
+    );
 
-    long countByContractorIdAndIsActiveTrueAndExpiresAtAfter(String contractorId, LocalDateTime now);
+    List<Story> findByExpiresAtBeforeAndIsActiveTrue(
+            LocalDateTime now
+    );
 
     void deleteByExpiresAtBefore(LocalDateTime now);
-
-    void deleteByContractorId(String contractorId);
 }

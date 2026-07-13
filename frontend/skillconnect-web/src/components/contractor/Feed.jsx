@@ -1,15 +1,15 @@
 import React from 'react';
 import Stories from './Stories';
 import PostCard from './PostCard';
-import CreatePost from './CreatePost';
 
 const Feed = ({ 
   posts, 
-  stories, 
+  stories,
   profile, 
   user, 
   onViewStory, 
   onCreatePost, 
+  onCreateStory,
   onRefresh,
   onFollowToggle,
   onLike,
@@ -23,16 +23,16 @@ const Feed = ({
   return (
     <div className="space-y-4">
       
-      {/* ===== STORIES SECTION ===== */}
+      {/* ✅ Stories - NO delete handler needed anymore */}
       <Stories 
         stories={stories} 
         onViewStory={onViewStory}
         user={user}
         profile={profile}
-        onAddStory={onCreatePost}
+        onAddStory={onCreateStory}
       />
 
-      {/* ===== CREATE POST CARD ===== */}
+      {/* ===== CREATE POST ===== */}
       <div 
         className="rounded-xl p-4 cursor-pointer hover:bg-[#1C2333] transition"
         style={{ background: '#161B22', border: '1px solid #30363D' }}
@@ -53,40 +53,32 @@ const Feed = ({
           </div>
         </div>
         <div className="flex justify-around mt-3 pt-3 border-t border-gray-700">
-          <button className="text-gray-400 hover:text-blue-400 text-sm transition flex items-center gap-1">
+          <button onClick={(e) => { e.stopPropagation(); onCreatePost(); }} className="text-gray-400 hover:text-blue-400 text-sm transition flex items-center gap-1">
             <span>📷</span> Photo
           </button>
-          <button className="text-gray-400 hover:text-purple-400 text-sm transition flex items-center gap-1">
+          <button onClick={(e) => { e.stopPropagation(); onCreatePost(); }} className="text-gray-400 hover:text-purple-400 text-sm transition flex items-center gap-1">
             <span>🎥</span> Video
           </button>
-          <button className="text-gray-400 hover:text-green-400 text-sm transition flex items-center gap-1">
+          <button onClick={(e) => { e.stopPropagation(); onCreatePost(); }} className="text-gray-400 hover:text-green-400 text-sm transition flex items-center gap-1">
             <span>🏗</span> Project
           </button>
-          <button className="text-gray-400 hover:text-yellow-400 text-sm transition flex items-center gap-1">
+          <button onClick={(e) => { e.stopPropagation(); onCreatePost(); }} className="text-gray-400 hover:text-yellow-400 text-sm transition flex items-center gap-1">
             <span>🎉</span> Achievement
           </button>
-          <button className="text-gray-400 hover:text-orange-400 text-sm transition flex items-center gap-1">
+          <button onClick={(e) => { e.stopPropagation(); onCreatePost(); }} className="text-gray-400 hover:text-orange-400 text-sm transition flex items-center gap-1">
             <span>💰</span> Offer
           </button>
         </div>
       </div>
 
-      {/* ===== REFRESH BUTTON ===== */}
       <div className="flex justify-end">
-        <button 
-          onClick={onRefresh}
-          className="text-gray-400 hover:text-white text-sm transition flex items-center gap-1"
-        >
+        <button onClick={onRefresh} className="text-gray-400 hover:text-white text-sm transition flex items-center gap-1">
           🔄 Refresh Feed
         </button>
       </div>
 
-      {/* ===== FEED POSTS ===== */}
       {posts.length === 0 ? (
-        <div 
-          className="rounded-xl p-8 text-center"
-          style={{ background: '#161B22', border: '1px solid #30363D' }}
-        >
+        <div className="rounded-xl p-8 text-center" style={{ background: '#161B22', border: '1px solid #30363D' }}>
           <p className="text-gray-400">No posts yet. Follow contractors to see their updates!</p>
         </div>
       ) : (

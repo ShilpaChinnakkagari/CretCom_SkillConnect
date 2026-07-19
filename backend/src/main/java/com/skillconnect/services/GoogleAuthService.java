@@ -36,38 +36,35 @@ public class GoogleAuthService {
             boolean isNewUser = false;
 
             if (user == null) {
-                // ✅ NEW USER - NO ROLE YET
                 user = new User();
                 user.setEmail(email);
                 user.setName(name);
                 user.setProfilePicture(picture);
                 user.setAuthProvider("GOOGLE");
-                user.setIsVerified(true);
-                user.setIsActive(true);
+                user.setVerified(true);
+                user.setActive(true);
                 user.setCreatedAt(LocalDateTime.now());
                 user.setUpdatedAt(LocalDateTime.now());
-                user.setUserType(null);  // ← NO ROLE
-                user.setRole(null);      // ← NO ROLE
+                user.setUserType(null);
+                user.setRole(null);
                 userRepository.save(user);
                 isNewUser = true;
                 log.info("✅ New user created via Google: {}", email);
             } else {
-                // ✅ EXISTING USER - KEEP THEIR ROLE
                 user.setName(name);
                 user.setProfilePicture(picture);
                 user.setUpdatedAt(LocalDateTime.now());
-                user.setLastLogin(LocalDateTime.now());
+                // ✅ REMOVED: user.setLastLogin(LocalDateTime.now());
                 userRepository.save(user);
                 log.info("✅ User updated via Google: {}", email);
             }
 
-            // ✅ Build response with userType (may be null)
             AuthResponse response = new AuthResponse();
             response.setUserId(user.getId());
             response.setEmail(user.getEmail());
             response.setName(user.getName());
-            response.setUserType(user.getUserType());  // ← May be null
-            response.setRole(user.getRole());          // ← May be null
+            response.setUserType(user.getUserType());
+            response.setRole(user.getRole());
             response.setProfilePicture(user.getProfilePicture());
             response.setNewUser(isNewUser);
 

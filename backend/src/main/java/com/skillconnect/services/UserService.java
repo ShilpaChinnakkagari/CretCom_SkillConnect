@@ -7,10 +7,12 @@ import com.skillconnect.models.User;
 import com.skillconnect.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -18,35 +20,31 @@ import java.time.LocalDateTime;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     // ===== REGISTER =====
     public AuthResponse register(RegisterRequest request) {
-        log.info("📝 Registering user: {}", request.getEmail());
+        log.info("📝 Registering new user: {}", request.getEmail());
 
-        // Check if user exists
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("User already exists with email: " + request.getEmail());
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already registered");
         }
 
-        // Create user
         User user = new User();
         user.setEmail(request.getEmail());
-        user.setPhoneNumber(request.getPhoneNumber());  // ✅ FIXED: phoneNumber
         user.setName(request.getName());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setUserType(request.getUserType() != null ? request.getUserType() : "CUSTOMER");
-        user.setRole(request.getUserType() != null ? request.getUserType() : "CUSTOMER");
+        user.setUserType(null); // No role yet - will be set during onboarding
+        user.setRole(null);
+        user.setActive(true);
+        user.setVerified(false);
         user.setAuthProvider("LOCAL");
-        user.setIsActive(true);
-        user.setIsVerified(false);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
 
         User savedUser = userRepository.save(user);
-        log.info("✅ User registered: {}", savedUser.getEmail());
+        log.info("✅ User registered successfully: {}", savedUser.getEmail());
 
-        // Build response
         AuthResponse response = new AuthResponse();
         response.setUserId(savedUser.getId());
         response.setEmail(savedUser.getEmail());
@@ -61,21 +59,23 @@ public class UserService {
 
     // ===== LOGIN =====
     public AuthResponse login(LoginRequest request) {
-        log.info("🔐 User login: {}", request.getEmail());
+        log.info("🔐 Login attempt: {}", request.getEmail());
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
+            throw new RuntimeException("Invalid email or password");
         }
 
-        if (!user.getIsActive()) {
-            throw new RuntimeException("Account is deactivated");
+        if (!user.isActive()) {
+            throw new RuntimeException("Account is disabled");
         }
 
-        user.setLastLogin(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
+
+        log.info("✅ User logged in: {}", user.getEmail());
 
         AuthResponse response = new AuthResponse();
         response.setUserId(user.getId());
@@ -87,6 +87,22 @@ public class UserService {
         response.setNewUser(false);
 
         return response;
+    }
+
+    // ===== UPDATE USER ROLE =====
+    public User updateUserRole(String userId, String userType) {
+        log.info("📝 Updating user role: {} -> {}", userId, userType);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setUserType(userType);
+        user.setRole(userType);
+        user.setUpdatedAt(LocalDateTime.now());
+
+        User updatedUser = userRepository.save(user);
+        log.info("✅ User role updated to: {}", userType);
+        return updatedUser;
     }
 
     // ===== GET USER BY ID =====
@@ -103,35 +119,40 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
     }
 
-    // ===== UPDATE USER ROLE =====
-    public User updateUserRole(String userId, String userType) {
-        log.info("📝 Updating user role: {} -> {}", userId, userType);
+    // ===== CHECK IF EMAIL EXISTS =====
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    // ===== UPDATE CUSTOMER PROFILE =====
+    public User updateCustomerProfile(String userId, String name, String phoneNumber, 
+                                       String location, List<String> languages, 
+                                       Map<String, Object> preferences) {
+        log.info("📝 Updating customer profile for userId: {}", userId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setUserType(userType);
-        user.setRole(userType);
+        if (name != null && !name.isEmpty()) {
+            user.setName(name);
+        }
+        if (phoneNumber != null && !phoneNumber.isEmpty()) {
+            user.setPhoneNumber(phoneNumber);
+        }
+        if (location != null && !location.isEmpty()) {
+            user.setLocation(location);
+        }
+        if (languages != null) {
+            user.setLanguages(languages);
+        }
+        if (preferences != null) {
+            user.setPreferences(preferences);
+        }
+
         user.setUpdatedAt(LocalDateTime.now());
 
-        return userRepository.save(user);
-    }
-
-    // ===== UPDATE USER =====
-    public User updateUser(User user) {
-        log.info("📝 Updating user: {}", user.getId());
-        user.setUpdatedAt(LocalDateTime.now());
-        return userRepository.save(user);
-    }
-
-    // ===== DELETE USER =====
-    public void deleteUser(String userId) {
-        log.info("🗑️ Deleting user: {}", userId);
-        userRepository.deleteById(userId);
-    }
-
-    // ===== GET USER BY EMAIL (for internal use) =====
-    public User findUserByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null);
+        User updatedUser = userRepository.save(user);
+        log.info("✅ Customer profile updated for userId: {}", userId);
+        return updatedUser;
     }
 }

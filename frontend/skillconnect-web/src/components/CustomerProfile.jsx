@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
+axios.defaults.withCredentials = true;
+
 const CustomerProfile = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phoneNumber: '',
-    location: '',
-    languages: [],
-    preferences: {
+    phoneNumber: user?.phoneNumber || '',
+    location: user?.location || '',
+    languages: user?.languages || [],
+    preferences: user?.preferences || {
       categories: [],
       budgetRange: '',
       locations: []
@@ -25,18 +27,52 @@ const CustomerProfile = ({ user }) => {
     fetchCustomerProfile();
   }, [user]);
 
+  const getCurrentUserId = () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
+    try {
+      const userData = JSON.parse(userStr);
+      return userData?.id || userData?.userId || null;
+    } catch {
+      return null;
+    }
+  };
+
   const fetchCustomerProfile = async () => {
     try {
-      // You can create a separate endpoint for customer profile
-      // For now, we'll use user data
-      setProfile(prev => ({
-        ...prev,
-        name: user?.name || '',
-        email: user?.email || '',
-        phoneNumber: user?.phoneNumber || '',
-      }));
+      const userId = getCurrentUserId();
+      if (!userId) return;
+
+      const response = await axios.get('http://localhost:8080/customer/profile', {
+        withCredentials: true
+      });
+
+      if (response.data) {
+        const userData = response.data;
+        setProfile({
+          name: userData.name || user?.name || '',
+          email: userData.email || user?.email || '',
+          phoneNumber: userData.phoneNumber || '',
+          location: userData.location || '',
+          languages: userData.languages || [],
+          preferences: userData.preferences || {
+            categories: [],
+            budgetRange: '',
+            locations: []
+          }
+        });
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      // Fallback to user data from localStorage
+      if (user) {
+        setProfile(prev => ({
+          ...prev,
+          name: user.name || '',
+          email: user.email || '',
+          phoneNumber: user.phoneNumber || '',
+        }));
+      }
     }
   };
 
@@ -66,93 +102,119 @@ const CustomerProfile = ({ user }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Save customer profile
-      await axios.put('http://localhost:8080/customer/profile', profile, {
+      const response = await axios.put('http://localhost:8080/customer/profile', {
+        name: profile.name,
+        phoneNumber: profile.phoneNumber,
+        location: profile.location,
+        languages: profile.languages || [],
+        preferences: profile.preferences || {}
+      }, {
         withCredentials: true
       });
-      toast.success('Profile updated successfully!');
-      setIsEditing(false);
+
+      if (response.data) {
+        toast.success('Profile updated successfully!');
+        setIsEditing(false);
+        
+        // Update user in localStorage
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const userData = JSON.parse(userStr);
+          userData.name = profile.name;
+          userData.phoneNumber = profile.phoneNumber;
+          userData.location = profile.location;
+          userData.languages = profile.languages;
+          userData.preferences = profile.preferences;
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+      toast.error(error.response?.data?.error || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="rounded-xl p-6" style={{ background: '#161B22', border: '1px solid #30363D' }}>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">👤 My Profile</h2>
+        <h2 className="text-2xl font-bold text-white">👤 My Profile</h2>
         <button
           onClick={() => setIsEditing(!isEditing)}
-          className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
         >
           {isEditing ? 'Cancel' : '✏️ Edit Profile'}
         </button>
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* Basic Info */}
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Full Name</label>
               <input
                 type="text"
                 name="name"
                 value={profile.name}
                 onChange={handleChange}
                 disabled={!isEditing}
-                className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                  isEditing ? 'focus:ring-2 focus:ring-indigo-500 focus:border-transparent' : 'bg-gray-50'
+                className={`w-full px-4 py-2 border rounded-lg text-white ${
+                  isEditing 
+                    ? 'bg-[#0D1117] border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
+                    : 'bg-[#0D1117]/50 border-gray-700 text-gray-400 cursor-not-allowed'
                 }`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
               <input
                 type="email"
                 value={profile.email}
                 disabled
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                className="w-full px-4 py-2 border border-gray-700 rounded-lg bg-[#0D1117]/50 text-gray-400 cursor-not-allowed"
               />
-              <p className="text-xs text-gray-400 mt-1">Email cannot be changed</p>
+              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
               <input
                 type="tel"
                 name="phoneNumber"
                 value={profile.phoneNumber}
                 onChange={handleChange}
                 disabled={!isEditing}
-                className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                  isEditing ? 'focus:ring-2 focus:ring-indigo-500 focus:border-transparent' : 'bg-gray-50'
+                className={`w-full px-4 py-2 border rounded-lg text-white ${
+                  isEditing 
+                    ? 'bg-[#0D1117] border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
+                    : 'bg-[#0D1117]/50 border-gray-700 text-gray-400 cursor-not-allowed'
                 }`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Location</label>
               <input
                 type="text"
                 name="location"
                 value={profile.location}
                 onChange={handleChange}
                 disabled={!isEditing}
-                className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                  isEditing ? 'focus:ring-2 focus:ring-indigo-500 focus:border-transparent' : 'bg-gray-50'
+                className={`w-full px-4 py-2 border rounded-lg text-white ${
+                  isEditing 
+                    ? 'bg-[#0D1117] border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
+                    : 'bg-[#0D1117]/50 border-gray-700 text-gray-400 cursor-not-allowed'
                 }`}
+                placeholder="e.g., City, State, Country"
               />
             </div>
           </div>
 
           {isEditing && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Languages Spoken</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Languages Spoken</label>
               <div className="flex flex-wrap gap-2">
                 {languages.map(lang => (
                   <button
@@ -161,8 +223,8 @@ const CustomerProfile = ({ user }) => {
                     onClick={() => toggleArrayField('languages', lang)}
                     className={`px-3 py-1 rounded-full text-sm transition ${
                       profile.languages?.includes(lang)
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     }`}
                   >
                     {lang}
@@ -174,18 +236,17 @@ const CustomerProfile = ({ user }) => {
 
           {!isEditing && profile.languages?.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-gray-700">Languages</p>
-              <p className="text-gray-600">{profile.languages.join(', ')}</p>
+              <p className="text-sm font-medium text-gray-300">Languages</p>
+              <p className="text-gray-400">{profile.languages.join(', ')}</p>
             </div>
           )}
         </div>
 
-        {/* Preferences */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Preferences</h3>
+        <div className="mt-6 pt-6 border-t border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4">Preferences</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Categories</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Preferred Categories</label>
               <div className="flex flex-wrap gap-2">
                 {categories.map(cat => (
                   <button
@@ -202,8 +263,10 @@ const CustomerProfile = ({ user }) => {
                     }}
                     className={`px-3 py-1 rounded-full text-sm transition ${
                       profile.preferences?.categories?.includes(cat)
-                        ? 'bg-indigo-600 text-white'
-                        : isEditing ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-500'
+                        ? 'bg-blue-600 text-white'
+                        : isEditing 
+                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                          : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                     }`}
                   >
                     {cat}
@@ -211,19 +274,21 @@ const CustomerProfile = ({ user }) => {
                 ))}
               </div>
               {!isEditing && !profile.preferences?.categories?.length && (
-                <p className="text-gray-500 text-sm">No preferences set</p>
+                <p className="text-gray-500 text-sm mt-1">No preferences set</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Budget Range</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Budget Range</label>
               <select
                 name="budgetRange"
                 value={profile.preferences?.budgetRange || ''}
                 onChange={(e) => handlePreferencesChange('budgetRange', e.target.value)}
                 disabled={!isEditing}
-                className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
-                  isEditing ? 'focus:ring-2 focus:ring-indigo-500 focus:border-transparent' : 'bg-gray-50'
+                className={`w-full px-4 py-2 border rounded-lg text-white ${
+                  isEditing 
+                    ? 'bg-[#0D1117] border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
+                    : 'bg-[#0D1117]/50 border-gray-700 text-gray-400 cursor-not-allowed'
                 }`}
               >
                 <option value="">Select budget range</option>
@@ -237,35 +302,41 @@ const CustomerProfile = ({ user }) => {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Summary</h3>
+        <div className="mt-6 pt-6 border-t border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4">Activity Summary</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">0</p>
-              <p className="text-xs text-gray-500">Services Booked</p>
+            <div className="bg-[#0D1117] rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-white">0</p>
+              <p className="text-xs text-gray-400">Services Booked</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">0</p>
-              <p className="text-xs text-gray-500">Favorite Experts</p>
+            <div className="bg-[#0D1117] rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-white">0</p>
+              <p className="text-xs text-gray-400">Favorite Experts</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">0</p>
-              <p className="text-xs text-gray-500">Reviews Given</p>
+            <div className="bg-[#0D1117] rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-white">0</p>
+              <p className="text-xs text-gray-400">Reviews Given</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">₹0</p>
-              <p className="text-xs text-gray-500">Total Spent</p>
+            <div className="bg-[#0D1117] rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-white">₹0</p>
+              <p className="text-xs text-gray-400">Total Spent</p>
             </div>
           </div>
         </div>
 
         {isEditing && (
-          <div className="mt-6 flex justify-end gap-3 pt-6 border-t border-gray-200">
+          <div className="mt-6 flex justify-end gap-3 pt-6 border-t border-gray-700">
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="px-6 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
             >
               {loading ? 'Saving...' : '💾 Save Changes'}
             </button>

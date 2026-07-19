@@ -7,8 +7,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Document(collection = "bookings")
 @Data
@@ -28,8 +26,6 @@ public class Booking {
     private LocalDateTime date;
     private String location;
     private Double budget;
-    private List<String> images = new ArrayList<>();
-
     private String status; // PENDING, ACCEPTED, REJECTED, COMPLETED, CANCELLED
 
     @CreatedDate
@@ -38,7 +34,7 @@ public class Booking {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    // ============ GETTERS & SETTERS ============
+    // ===== GETTERS =====
     public String getId() { return id; }
     public String getCustomerId() { return customerId; }
     public String getCustomerName() { return customerName; }
@@ -50,11 +46,11 @@ public class Booking {
     public LocalDateTime getDate() { return date; }
     public String getLocation() { return location; }
     public Double getBudget() { return budget; }
-    public List<String> getImages() { return images; }
     public String getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 
+    // ===== SETTERS =====
     public void setId(String id) { this.id = id; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
@@ -66,7 +62,6 @@ public class Booking {
     public void setDate(LocalDateTime date) { this.date = date; }
     public void setLocation(String location) { this.location = location; }
     public void setBudget(Double budget) { this.budget = budget; }
-    public void setImages(List<String> images) { this.images = images; }
     public void setStatus(String status) { this.status = status; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }

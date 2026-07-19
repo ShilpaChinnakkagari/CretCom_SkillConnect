@@ -125,7 +125,7 @@ public class BookingController {
         }
     }
 
-    // ===== UPDATE BOOKING STATUS =====
+    // ===== UPDATE BOOKING STATUS WITH REASON =====
     @PutMapping("/{bookingId}/status")
     public ResponseEntity<?> updateBookingStatus(
             @PathVariable String bookingId,
@@ -144,8 +144,11 @@ public class BookingController {
                         .body(Map.of("error", "Status is required"));
             }
 
-            log.info("📝 Updating booking {} status to: {}", bookingId, status);
-            Booking booking = bookingService.updateBookingStatus(bookingId, status, userId);
+            // ✅ Get reason if provided
+            String reason = request.get("reason");
+
+            log.info("📝 Updating booking {} status to: {}, reason: {}", bookingId, status, reason);
+            Booking booking = bookingService.updateBookingStatus(bookingId, status, userId, reason);
             return ResponseEntity.ok(booking);
 
         } catch (Exception e) {

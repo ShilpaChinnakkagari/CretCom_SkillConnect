@@ -76,9 +76,9 @@ public class BookingService {
         return bookingRepository.findByContractorIdOrderByCreatedAtDesc(contractorId);
     }
 
-    // ===== UPDATE BOOKING STATUS =====
-    public Booking updateBookingStatus(String bookingId, String status, String userId) {
-        log.info("📝 Updating booking {} status to: {}", bookingId, status);
+    // ===== UPDATE BOOKING STATUS WITH REASON =====
+    public Booking updateBookingStatus(String bookingId, String status, String userId, String reason) {
+        log.info("📝 Updating booking {} status to: {}, reason: {}", bookingId, status, reason);
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
@@ -105,6 +105,16 @@ public class BookingService {
 
         booking.setStatus(status);
         booking.setUpdatedAt(LocalDateTime.now());
+
+        // ✅ Save rejection reason if REJECTED
+        if (status.equals("REJECTED") && reason != null && !reason.trim().isEmpty()) {
+            booking.setRejectionReason(reason);
+        }
+
+        // ✅ Save cancel reason if CANCELLED
+        if (status.equals("CANCELLED") && reason != null && !reason.trim().isEmpty()) {
+            booking.setCancelReason(reason);
+        }
 
         Booking updatedBooking = bookingRepository.save(booking);
         log.info("✅ Booking {} status updated to: {}", bookingId, status);

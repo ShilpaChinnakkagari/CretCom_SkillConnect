@@ -5,6 +5,7 @@ const RightSidebar = ({ profile, bookings, recommended, onRefresh, onFollowToggl
   const pending = bookings.filter(b => b.status === 'PENDING').length;
   const accepted = bookings.filter(b => b.status === 'ACCEPTED').length;
   const completed = bookings.filter(b => b.status === 'COMPLETED').length;
+  const rejected = bookings.filter(b => b.status === 'REJECTED').length;  // ✅ ADDED
   const cancelled = bookings.filter(b => b.status === 'CANCELLED').length;
 
   const isFollowing = (userId) => {
@@ -54,7 +55,11 @@ const RightSidebar = ({ profile, bookings, recommended, onRefresh, onFollowToggl
             <span className="text-white font-semibold">{completed}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-red-400 text-sm">❌ Cancelled</span>
+            <span className="text-red-400 text-sm">❌ Rejected</span>
+            <span className="text-white font-semibold">{rejected}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400 text-sm">🚫 Cancelled</span>
             <span className="text-white font-semibold">{cancelled}</span>
           </div>
         </div>
@@ -107,7 +112,6 @@ const RightSidebar = ({ profile, bookings, recommended, onRefresh, onFollowToggl
                   </div>
                   <button 
                     onClick={() => {
-                      console.log('Follow clicked for:', contractor.userId, 'Current:', isUserFollowing);
                       if (onFollowToggle) {
                         onFollowToggle(contractor.userId, isUserFollowing);
                       }
@@ -118,7 +122,7 @@ const RightSidebar = ({ profile, bookings, recommended, onRefresh, onFollowToggl
                         : 'bg-blue-400/10 text-blue-400 hover:bg-blue-400/20'
                     }`}
                   >
-                    {isUserFollowing ? '✅ Following' : 'Follow'}
+                    {isUserFollowing ? '✅ Following' : '+ Follow'}
                   </button>
                 </div>
               );

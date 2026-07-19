@@ -161,6 +161,7 @@ const ContractorDashboard = () => {
           withCredentials: true
         });
         setBookings(bookingsRes.data || []);
+        console.log('📅 Bookings received:', bookingsRes.data?.length || 0);
       } catch (bookingError) {
         if (bookingError.response?.status === 404) {
           console.log('No bookings found');
@@ -340,24 +341,21 @@ const ContractorDashboard = () => {
     toast.success('Post updated!');
   };
 
-  // ===== DELETE INDIVIDUAL STORY - FIXED =====
+  // ===== DELETE INDIVIDUAL STORY =====
   const handleStoryDelete = async (storyId) => {
     try {
       console.log('🗑️ Deleting individual story:', storyId);
       
-      // ✅ Call API to delete
       await axios.delete(`http://localhost:8080/stories/${storyId}`, {
         withCredentials: true
       });
       
       toast.success('Story deleted successfully');
       
-      // ✅ Remove from ALL states
       setOwnStories(prev => prev.filter(s => s.id !== storyId));
       setFeedStories(prev => prev.filter(s => s.id !== storyId));
       setAllStoriesForViewer(prev => prev.filter(s => s.id !== storyId));
       
-      // ✅ Close viewer immediately
       setShowStoryViewer(false);
       
     } catch (error) {
@@ -378,15 +376,12 @@ const ContractorDashboard = () => {
 
     switch (activeTab) {
       case 'home': {
-        // Combine own + feed stories
         const allStories = [...ownStories, ...feedStories];
         
-        // Remove duplicates by id
         const uniqueStories = allStories.filter((story, index, self) => 
           index === self.findIndex(s => s.id === story.id)
         );
         
-        // Sort by createdAt (newest first)
         const sortedStories = uniqueStories.sort((a, b) => 
           new Date(b.createdAt) - new Date(a.createdAt)
         );
@@ -413,7 +408,7 @@ const ContractorDashboard = () => {
       }
       
       case 'bookings':
-        return <Bookings />;
+        return <Bookings onBookingUpdate={handleRefresh} />;
       
       case 'analytics':
         return <Analytics />;
@@ -552,12 +547,10 @@ const ContractorDashboard = () => {
       case 'stories': {
         const currentUserIdStories = getCurrentUserId();
         
-        // ✅ Get ONLY the logged-in user's stories
         const myStories = ownStories.filter(story => 
           story.contractorId === currentUserIdStories
         );
         
-        // ✅ Sort by createdAt (newest first)
         const sortedMyStories = myStories.sort((a, b) => 
           new Date(b.createdAt) - new Date(a.createdAt)
         );
@@ -582,7 +575,6 @@ const ContractorDashboard = () => {
                     className="rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition group relative"
                     style={{ background: '#161B22', border: '1px solid #30363D' }}
                   >
-                    {/* ===== STORY PREVIEW ===== */}
                     <div 
                       className="aspect-square bg-gradient-to-br from-purple-500 to-pink-500 p-0.5"
                       onClick={() => {
@@ -602,7 +594,6 @@ const ContractorDashboard = () => {
                       </div>
                     </div>
                     
-                    {/* ===== STORY INFO ===== */}
                     <div className="p-2">
                       <p className="text-white text-sm truncate">{story.caption || 'Story'}</p>
                       <p className="text-gray-500 text-xs">{new Date(story.createdAt).toLocaleDateString()}</p>

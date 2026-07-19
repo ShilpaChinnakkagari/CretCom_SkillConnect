@@ -28,6 +28,10 @@ public class Booking {
     private Double budget;
     private String status; // PENDING, ACCEPTED, REJECTED, COMPLETED, CANCELLED
 
+    // ✅ ADDED: Rejection reason
+    private String rejectionReason;
+    private String cancelReason;
+
     @CreatedDate
     private LocalDateTime createdAt;
 
@@ -47,6 +51,8 @@ public class Booking {
     public String getLocation() { return location; }
     public Double getBudget() { return budget; }
     public String getStatus() { return status; }
+    public String getRejectionReason() { return rejectionReason; }
+    public String getCancelReason() { return cancelReason; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 
@@ -63,6 +69,8 @@ public class Booking {
     public void setLocation(String location) { this.location = location; }
     public void setBudget(Double budget) { this.budget = budget; }
     public void setStatus(String status) { this.status = status; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+    public void setCancelReason(String cancelReason) { this.cancelReason = cancelReason; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
